@@ -56,6 +56,35 @@ O ResourceURL publicado contém uma barra dupla após `1.0.0/`; o caminho normal
 
 ## Compatibilidade com o projeto — hipótese pendente de validação
 
+### Teste com Leaflet 1.9.4 — 14/11/2026
+
+**Resultado: compatibilidade parcial demonstrada para a indexação da grade angular; integração cartográfica completa ainda não validada.**
+
+Foi adicionado `scripts/check-leaflet-grid.mjs`. Execute após `npm.cmd ci`:
+
+```powershell
+node scripts/check-leaflet-grid.mjs
+```
+
+O teste executa os módulos matemáticos do Leaflet 1.9.4 instalado, transpilados em memória com TypeScript, sem DOM ou navegador. Apenas as funções de animação não utilizadas recebem objetos substitutos. Os dados de comparação são snapshots de GetCapabilities em `docs/evidence/jezero-wmts-grid.json`, incluindo cada nível, origem, dimensões e ScaleDenominator publicados. Não há implementação de uma projeção nova na aplicação.
+
+| Verificação | Resultado e alcance |
+| --- | --- |
+| Dimensões e origem das matrizes | Correspondência nas 45 matrizes: 13 CTX preliminar, 14 CTX controlado e 18 HiRISE |
+| Conversão longitude/latitude ↔ pixels | 135 coordenadas sintéticas dentro dos bounding boxes passaram nos testes de ida/volta e de índices de linha/coluna |
+| Tile de referência | 18.45 N, 77.45 E no nível 12 produz linha 1628 e coluna 5858, iguais ao tile consultado nos testes HTTP |
+| Template de URL | O helper real do Leaflet aceita a ordem `{z}/{y}/{x}`; o método de TileLayer que usa esse helper foi inspecionado, mas não executado como camada no navegador |
+| React Leaflet | Código instalado de TileLayer repassa opções ao Leaflet; isso não valida renderização ou CRS automaticamente |
+| Medidas padrão | EPSG4326 herda raio terrestre; `LatLng.distanceTo()` chama o modelo Earth independentemente do CRS do mapa. O teste confirmou esse comportamento |
+
+O teste usa a geometria angular de EPSG4326 como objeto de comparação, **não identifica os dados como WGS84 e não valida o datum anunciado**. Os pontos são sintéticos; não são marcos geográficos independentes. A coincidência dos cálculos não comprova a transformação efetiva do servidor.
+
+O TileLayer padrão não interpreta GetCapabilities nem reprojeta o conteúdo dos PNGs: é necessário configurar explicitamente o CRS/transformação e o mapeamento de nível/linha/coluna. Para a grade examinada, `tileSize=256`, origem no norte, `tms=false` e limites por camada são os candidatos indicados pelos metadados e pela inspeção do código. Confirmar comportamento de bounds, noWrap, níveis nativos e transições de zoom no navegador antes da integração.
+
+Permanecem pendentes: esclarecer a inconsistência de CRS identificada abaixo, comparar marcos independentes, testar costuras entre tiles, alinhamento entre camadas, zoom/arraste, redimensionamento, carregamento real pelo navegador e falhas de rede. Distâncias exigem um método explícito e validado; mudar apenas o raio do CRS não corrige chamadas a `LatLng.distanceTo()` em outros componentes ou plugins.
+
+Fonte de API: [Leaflet 1.9.4](https://leafletjs.com/reference-1.9.4.html#crs). Nenhuma dependência foi adicionada e nenhum mapa da aplicação foi substituído.
+
 ### Verificação da projeção cartográfica — 14/11/2026
 
 **Produtos de origem:** a USGS identifica os mosaicos CTX e HiRISE controlados selecionados como equiretangulares. O WKT do CTX controlado no catálogo NASA confirma `Equirectangular`, esfera de raio 3.396.190 m, meridiano central 0°, paralelo padrão 0°, latitude de origem 0° e falsos leste/norte de 0 m; as coordenadas projetadas do raster são métricas. Nessa parametrização esférica, a projeção é do tipo Plate Carrée.

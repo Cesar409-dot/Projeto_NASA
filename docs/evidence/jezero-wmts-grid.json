@@ -1,0 +1,585 @@
+{
+  "retrieved": "2026-11-14",
+  "note": "Snapshot of advertised angular matrices; not ground-control validation",
+  "layers": [
+    {
+      "source": "https://trek.nasa.gov/tiles/Mars/EQ/Jezero_CTX_BlockAdj_dd/1.0.0/WMTSCapabilities.xml",
+      "supportedCRS": "urn:ogc:def:crs:EPSG::104905",
+      "id": "Jezero_CTX_BlockAdj_dd",
+      "bbox": [
+        75.1537692,
+        15.9058484,
+        78.8717121,
+        19.4453003
+      ],
+      "matrices": [
+        {
+          "id": "0",
+          "width": 2,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 1,
+          "scaleDenominator": 279227636.2980747
+        },
+        {
+          "id": "1",
+          "width": 4,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 2,
+          "scaleDenominator": 139613818.14903736
+        },
+        {
+          "id": "2",
+          "width": 8,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 4,
+          "scaleDenominator": 69806909.07451868
+        },
+        {
+          "id": "3",
+          "width": 16,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 8,
+          "scaleDenominator": 34903454.53725934
+        },
+        {
+          "id": "4",
+          "width": 32,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 16,
+          "scaleDenominator": 17451727.26862967
+        },
+        {
+          "id": "5",
+          "width": 64,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 32,
+          "scaleDenominator": 8725863.634314835
+        },
+        {
+          "id": "6",
+          "width": 128,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 64,
+          "scaleDenominator": 4362931.817157418
+        },
+        {
+          "id": "7",
+          "width": 256,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 128,
+          "scaleDenominator": 2181465.908578709
+        },
+        {
+          "id": "8",
+          "width": 512,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 256,
+          "scaleDenominator": 1090732.9542893544
+        },
+        {
+          "id": "9",
+          "width": 1024,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 512,
+          "scaleDenominator": 545366.4771446772
+        },
+        {
+          "id": "10",
+          "width": 2048,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 1024,
+          "scaleDenominator": 272683.2385723386
+        },
+        {
+          "id": "11",
+          "width": 4096,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 2048,
+          "scaleDenominator": 136341.6192861693
+        },
+        {
+          "id": "12",
+          "width": 8192,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 4096,
+          "scaleDenominator": 68170.80964308465
+        }
+      ]
+    },
+    {
+      "source": "https://trek.nasa.gov/tiles/Mars/EQ/JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0/1.0.0/WMTSCapabilities.xml",
+      "supportedCRS": "urn:ogc:def:crs:EPSG::104905",
+      "id": "JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0",
+      "bbox": [
+        77.1604655,
+        18.2110274,
+        77.6991776,
+        18.7211945
+      ],
+      "matrices": [
+        {
+          "id": "0",
+          "width": 2,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 1,
+          "scaleDenominator": 279227636.2980747
+        },
+        {
+          "id": "1",
+          "width": 4,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 2,
+          "scaleDenominator": 139613818.14903736
+        },
+        {
+          "id": "2",
+          "width": 8,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 4,
+          "scaleDenominator": 69806909.07451868
+        },
+        {
+          "id": "3",
+          "width": 16,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 8,
+          "scaleDenominator": 34903454.53725934
+        },
+        {
+          "id": "4",
+          "width": 32,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 16,
+          "scaleDenominator": 17451727.26862967
+        },
+        {
+          "id": "5",
+          "width": 64,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 32,
+          "scaleDenominator": 8725863.634314835
+        },
+        {
+          "id": "6",
+          "width": 128,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 64,
+          "scaleDenominator": 4362931.817157418
+        },
+        {
+          "id": "7",
+          "width": 256,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 128,
+          "scaleDenominator": 2181465.908578709
+        },
+        {
+          "id": "8",
+          "width": 512,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 256,
+          "scaleDenominator": 1090732.9542893544
+        },
+        {
+          "id": "9",
+          "width": 1024,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 512,
+          "scaleDenominator": 545366.4771446772
+        },
+        {
+          "id": "10",
+          "width": 2048,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 1024,
+          "scaleDenominator": 272683.2385723386
+        },
+        {
+          "id": "11",
+          "width": 4096,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 2048,
+          "scaleDenominator": 136341.6192861693
+        },
+        {
+          "id": "12",
+          "width": 8192,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 4096,
+          "scaleDenominator": 68170.80964308465
+        },
+        {
+          "id": "13",
+          "width": 16384,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 8192,
+          "scaleDenominator": 34085.404821542324
+        }
+      ]
+    },
+    {
+      "source": "https://trek.nasa.gov/tiles/Mars/EQ/JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd/1.0.0/WMTSCapabilities.xml",
+      "supportedCRS": "urn:ogc:def:crs:EPSG::104905",
+      "id": "JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd",
+      "bbox": [
+        77.2229331,
+        18.3067994,
+        77.583964,
+        18.669315
+      ],
+      "matrices": [
+        {
+          "id": "0",
+          "width": 2,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 1,
+          "scaleDenominator": 279227636.2980747
+        },
+        {
+          "id": "1",
+          "width": 4,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 2,
+          "scaleDenominator": 139613818.14903736
+        },
+        {
+          "id": "2",
+          "width": 8,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 4,
+          "scaleDenominator": 69806909.07451868
+        },
+        {
+          "id": "3",
+          "width": 16,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 8,
+          "scaleDenominator": 34903454.53725934
+        },
+        {
+          "id": "4",
+          "width": 32,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 16,
+          "scaleDenominator": 17451727.26862967
+        },
+        {
+          "id": "5",
+          "width": 64,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 32,
+          "scaleDenominator": 8725863.634314835
+        },
+        {
+          "id": "6",
+          "width": 128,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 64,
+          "scaleDenominator": 4362931.817157418
+        },
+        {
+          "id": "7",
+          "width": 256,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 128,
+          "scaleDenominator": 2181465.908578709
+        },
+        {
+          "id": "8",
+          "width": 512,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 256,
+          "scaleDenominator": 1090732.9542893544
+        },
+        {
+          "id": "9",
+          "width": 1024,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 512,
+          "scaleDenominator": 545366.4771446772
+        },
+        {
+          "id": "10",
+          "width": 2048,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 1024,
+          "scaleDenominator": 272683.2385723386
+        },
+        {
+          "id": "11",
+          "width": 4096,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 2048,
+          "scaleDenominator": 136341.6192861693
+        },
+        {
+          "id": "12",
+          "width": 8192,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 4096,
+          "scaleDenominator": 68170.80964308465
+        },
+        {
+          "id": "13",
+          "width": 16384,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 8192,
+          "scaleDenominator": 34085.404821542324
+        },
+        {
+          "id": "14",
+          "width": 32768,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 16384,
+          "scaleDenominator": 17042.702410771162
+        },
+        {
+          "id": "15",
+          "width": 65536,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 32768,
+          "scaleDenominator": 8521.351205385581
+        },
+        {
+          "id": "16",
+          "width": 131072,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 65536,
+          "scaleDenominator": 4260.675602692791
+        },
+        {
+          "id": "17",
+          "width": 262144,
+          "tileHeight": 256,
+          "topLeft": [
+            -180,
+            90
+          ],
+          "tileWidth": 256,
+          "height": 131072,
+          "scaleDenominator": 2130.3378013463953
+        }
+      ]
+    }
+  ]
+}
