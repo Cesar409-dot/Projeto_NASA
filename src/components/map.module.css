@@ -1,0 +1,139 @@
+.workspace {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  border: 1px solid var(--line);
+  min-height: 640px;
+}
+.sidebar {
+  background: var(--panel);
+  padding: 24px;
+  border-right: 1px solid var(--line);
+}
+.sidebar h3 {
+  margin: 12px 0 20px;
+}
+.layer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 12px;
+  cursor: pointer;
+}
+.layer input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+.place {
+  display: block;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--muted);
+  text-align: left;
+  padding: 12px;
+  width: 100%;
+  margin: 5px 0;
+  font-size: 12px;
+}
+.place[aria-pressed="true"] {
+  border-color: #88553d;
+  background: #2b231f;
+  color: var(--accent);
+}
+.place span {
+  margin-right: 12px;
+  font-family: monospace;
+}
+.mapColumn {
+  position: relative;
+  min-width: 0;
+}
+.map {
+  height: 410px;
+  width: 100%;
+  z-index: 0;
+}
+.mapTop {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+.mapBottom {
+  padding: 22px 25px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 25px;
+}
+.mapBottom h3 {
+  margin: 8px 0 12px;
+}
+.mapBottom p {
+  font-size: 12px;
+  max-width: 630px;
+}
+.coordinates {
+  padding: 12px 20px;
+  background: #191e1e;
+  border-top: 1px solid var(--line);
+  font-family: monospace;
+  color: var(--muted);
+  font-size: 10px;
+}
+.route {
+  font-size: 12px;
+  margin-top: 20px;
+}
+.route ol {
+  padding-left: 22px;
+  color: var(--muted);
+}
+.route li {
+  padding: 6px 0;
+}
+.route li button {
+  float: right;
+  color: var(--muted);
+  border: 0;
+  background: none;
+}
+.loading {
+  height: 410px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+@media (max-width: 950px) {
+  .workspace {
+    grid-template-columns: 240px 1fr;
+  }
+  .mapBottom {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .map {
+    height: 360px;
+  }
+  .mapTop {
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .mapBottom {
+    padding: 20px;
+  }
+  .coordinates {
+    font-size: 9px;
+  }
+}

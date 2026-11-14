@@ -1,0 +1,94 @@
+.garden {
+  position: relative;
+  min-height: 360px;
+  background:
+    radial-gradient(ellipse at 50% 80%, #68894333, transparent 65%), #111917;
+  border: 1px solid #344237;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.garden:before {
+  content: "";
+  position: absolute;
+  width: 75%;
+  height: 250px;
+  border: 1px solid #769a5a55;
+  border-radius: 180px 180px 0 0;
+  bottom: 50px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 24%,
+    #769a5a22 25%,
+    transparent 26%
+  );
+}
+.plant {
+  position: relative;
+  color: var(--green);
+  filter: drop-shadow(0 0 35px #a3bf6533);
+}
+.caption {
+  position: absolute;
+  bottom: 18px;
+  left: 22px;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  color: var(--green);
+}
+.tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 18px 24px;
+  color: var(--muted);
+  flex: 1;
+  text-align: left;
+}
+.tab[aria-pressed="true"] {
+  border-color: var(--green);
+  color: var(--green);
+}
+.detail h2 {
+  margin: 15px 0 4px;
+}
+.detail p {
+  font-size: 14px;
+  margin-top: 20px;
+}
+.latin {
+  font-family: serif;
+  font-style: italic;
+  color: var(--muted);
+}
+.control {
+  margin: 22px 0;
+}
+.control label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.control input {
+  width: 100%;
+  accent-color: var(--green);
+}
+@media (max-width: 650px) {
+  .tab {
+    padding: 14px;
+  }
+  .garden {
+    min-height: 300px;
+  }
+}
