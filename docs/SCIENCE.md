@@ -13,6 +13,8 @@ As posições em `src/data/mission.ts` são editoriais no plano da imagem. Não 
 
 ## Mars Trek / integração futura
 
+Atualização: consulte a [verificação prática de serviços de Jezero](MAPS_FEASIBILITY.md), que registra os endpoints, metadados, tiles e compatibilidade com Leaflet efetivamente testados. A aplicação ainda utiliza a imagem local.
+
 [Mars Trek](https://trek.nasa.gov/mars/) e [documentação oficial WMTS](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars).
 
 Serviços OGC RESTful WMTS incluem MGS/MOLA, MOC e combinações MOLA/HRSC. Produtos equirretangulares declaram `urn:ogc:def:crs:EPSG::104905`. Os caminhos usam Style, TileMatrixSet, TileMatrix, TileRow e TileCol. A extensão PNG/JPG vem de ResourceURL no GetCapabilities. Ausência de tile pode indicar ausência de cobertura.
