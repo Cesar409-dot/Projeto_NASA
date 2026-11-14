@@ -56,6 +56,18 @@ O ResourceURL publicado contém uma barra dupla após `1.0.0/`; o caminho normal
 
 ## Compatibilidade com o projeto — hipótese pendente de validação
 
+### Verificação da projeção cartográfica — 14/11/2026
+
+**Produtos de origem:** a USGS identifica os mosaicos CTX e HiRISE controlados selecionados como equiretangulares. O WKT do CTX controlado no catálogo NASA confirma `Equirectangular`, esfera de raio 3.396.190 m, meridiano central 0°, paralelo padrão 0°, latitude de origem 0° e falsos leste/norte de 0 m; as coordenadas projetadas do raster são métricas. Nessa parametrização esférica, a projeção é do tipo Plate Carrée.
+
+**Forma publicada no serviço:** os três GetCapabilities consultados descrevem uma grade angular com origem (-180°, 90°), tiles 256 × 256 e matriz inicial 2 × 1. O catálogo da camada HiRISE com sufixo `_dd` fornece WKT geográfico em graus, enquanto o CTX controlado fornece WKT projetado em metros. Essa diferença exige tratar separadamente o raster de origem e sua representação no serviço. A geometria da matriz é consistente com exibição equirretangular, mas o GetCapabilities, isoladamente, não comprova a transformação usada na geração da pirâmide ou o alinhamento entre as camadas.
+
+**Outro produto na mesma página USGS:** o texto sobre uma projeção ortográfica refere-se explicitamente ao mosaico derivado JPL Surface Operations, centrado em longitude 77.4298° e latitude 18.4663°. Ele não deve ser usado como definição da projeção do mosaico equiretangular principal ou das três camadas WMTS investigadas. Uma imagem ortorretificada também pode ter projeção equiretangular; o processo de ortorretificação não identifica a projeção cartográfica.
+
+**Resultado deste critério:** projeção de origem equiretangular confirmada para os dois produtos controlados; parametrização completa confirmada no WKT do CTX controlado. A forma angular do serviço foi identificada. A transformação efetiva do WMTS e sua reprodução correta no Leaflet continuam pendentes de validação por pontos de controle. Não usar o valor de ScaleDenominator como resolução métrica marciana sem verificar suas convenções.
+
+Referências: [USGS CTX](https://astrogeology.usgs.gov/search/map/mars_2020_terrain_relative_navigation_context_camera_orthorectified_image_mosaic), [USGS HiRISE e produto derivado JPL](https://astrogeology.usgs.gov/search/map/mars_2020_terrain_relative_navigation_hirise_orthorectified_image_mosaic) e [catálogo NASA](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars). Os campos WKT foram lidos dos registros públicos do catálogo. Não foi baixado o GeoTIFF completo.
+
 ### Verificação do sistema de coordenadas — 14/11/2026
 
 Foram comparados os três GetCapabilities, os registros de projeção do catálogo público Mars Trek e as descrições dos produtos de origem na USGS. É necessário separar o CRS do raster original, o CRS anunciado pelo serviço e a grade dos tiles.
