@@ -56,6 +56,10 @@ O ResourceURL publicado contém uma barra dupla após `1.0.0/`; o caminho normal
 
 ## Compatibilidade com o projeto — hipótese pendente de validação
 
+### Atribuição das fontes — 14/11/2026
+
+Consulte a [verificação de créditos cartográficos](MAP_ATTRIBUTION.md): crédito da imagem PIA19303 atual confirmado; autores e DOIs dos mosaicos controlados CTX e HiRISE identificados; autoria específica do processamento do CTX preliminar ainda pendente. O relatório distingue produtos científicos originais, serviço de distribuição e anotações do protótipo. As sugestões de crédito curto não são apresentadas como linhas oficiais transcritas.
+
 ### Restrições de acesso — 14/11/2026
 
 **Acesso aos serviços:** as consultas de metadados e tiles documentadas acima foram realizadas por HTTPS, sem chave de API ou login solicitado. Não houve resposta 401/403 nas URLs amostradas. Nova rodada de acesso também retornou HTTP 200 para CTX preliminar e HiRISE, com Origin de localhost e de outro domínio. Uma confirmação adicional dos tiles das três camadas usou `curl -q` para desativar configurações pessoais e cabeçalhos Authorization/Cookie explicitamente removidos: os três retornaram HTTP 200 / image/png. Isso comprova acesso anônimo nessas requisições, não uma política imutável para todos os serviços NASA.

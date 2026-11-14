@@ -4,6 +4,8 @@ Consulta inicial: 14/11/2026. Textos são sínteses educativas, não citações 
 
 ## Mars Maps
 
+Consulte também os [créditos e referências por produto cartográfico](MAP_ATTRIBUTION.md), incluindo as pendências do mosaico CTX preliminar.
+
 - [PIA19303 — Jezero Crater](https://science.nasa.gov/photojournal/a-possible-landing-site-for-the-2020-mission-jezero-crater/), 04/03/2015. MRO; crédito NASA/JPL-Caltech/University of Arizona. Arquivo `public/images/jezero.jpg`, 2880 × 1800, obtido do domínio oficial `assets.science.nasa.gov`. A imagem contém realces de cor; cor não é elevação.
 - [Compositionally and density stratified igneous terrain in Jezero crater, Mars](https://doi.org/10.1126/sciadv.abo3399), Science Advances (2022): aproximadamente 18,4° N, 77,5° E. Referência regional, não posição dos marcadores.
 - [Perseverance Explores the Jezero Crater Delta](https://science.nasa.gov/resource/perseverance-explores-the-jezero-crater-delta/): interesse científico do delta, sem afirmar descoberta de vida.
