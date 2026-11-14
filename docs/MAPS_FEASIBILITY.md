@@ -56,6 +56,33 @@ O ResourceURL publicado contém uma barra dupla após `1.0.0/`; o caminho normal
 
 ## Compatibilidade com o projeto — hipótese pendente de validação
 
+### Verificação do sistema de coordenadas — 14/11/2026
+
+Foram comparados os três GetCapabilities, os registros de projeção do catálogo público Mars Trek e as descrições dos produtos de origem na USGS. É necessário separar o CRS do raster original, o CRS anunciado pelo serviço e a grade dos tiles.
+
+| Evidência | Resultado |
+| --- | --- |
+| SupportedCRS dos três WMTS | `urn:ogc:def:crs:EPSG::104905` |
+| BoundingBox e TopLeftCorner publicados | Pares com valores de longitude/latitude em graus; origem (-180, 90), consistente com X=longitude e Y=latitude |
+| CTX preliminar no catálogo | Repete o URN; não fornece definição WKT completa no campo de projeção consultado |
+| CTX controlado no catálogo | Equiretangular sobre esfera de raio 3.396.190 m, achatamento zero; meridiano central, paralelo padrão, latitude de origem e falsos deslocamentos iguais a zero; unidades projetadas em metros |
+| HiRISE controlado no catálogo | CRS geográfico em graus sobre esfera de raio 3.396.190 m, achatamento zero; datum nomeado como desconhecido no WKT |
+| Produtos controlados de origem na USGS | Equiretangular; latitude planetocêntrica, longitude positiva para leste, domínio -180 a 180; raios A=C=3.396.190 m |
+
+**Inconsistência de identificação:** o código 104905 é documentado como **ESRI:104905 / GCS_Mars_2000**, com elipsoide de semieixo maior 3.396.190 m e inverso do achatamento 169,8944472236118. Isso não é o mesmo que a esfera de achatamento zero descrita nos produtos controlados. O WMTS usa o namespace EPSG para esse número; a configuração pública do catálogo também contém um URN IAU2000 com o mesmo número. Não há base para tratar esses namespaces como equivalentes ou resolver automaticamente a definição anunciada.
+
+Os documentos confirmam as convenções dos produtos de origem; não demonstram, sozinhos, qual transformação o servidor aplicou ao gerar cada pirâmide WMTS. O campo WGS84BoundingBox presente nos XMLs também não torna os dados terrestres ou WGS84. A ordem e os valores dos pares publicados devem ser tratados como evidência do contrato do serviço, sem deduzir a ordem dos eixos apenas do código numérico.
+
+**Consequência:** usar um CRS explícito e validado para Marte, em vez de registrar cegamente `EPSG:104905` ou substituir por WGS84/Web Mercator. Antes de sobrepor pontos e trajetórias, confirmar latitude planetocêntrica/planetográfica, sentido e domínio de longitude, ordem dos eixos e transformação efetiva do serviço por pontos de controle. A compatibilidade com Leaflet continua pendente. Nenhum datum vertical foi validado.
+
+Fontes específicas:
+
+- [Catálogo Mars Trek](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars), registros de projeção consultados pelo serviço público indicado na configuração da própria página.
+- [USGS: CTX ortorretificado Mars 2020](https://astrogeology.usgs.gov/search/map/mars_2020_terrain_relative_navigation_context_camera_orthorectified_image_mosaic).
+- [USGS: HiRISE ortorretificado Mars 2020](https://astrogeology.usgs.gov/search/map/mars_2020_terrain_relative_navigation_hirise_orthorectified_image_mosaic).
+- [USGS: WKT e autoridade ESRI de 104905, páginas 3–4](https://pubs.usgs.gov/of/2012/1259/SP_Dunes_Metadata/Dune-Field_Centroid/SP_Dune_Field_Centroid.pdf). Usado apenas para identificar o código, não como metadado das imagens de Jezero.
+- [USGS/IAU: sistemas de coordenadas de Marte](https://planetarynames.wr.usgs.gov/Page/MARS/system).
+
 O mapa atual utiliza `CRS.Simple` em unidades de imagem. Ele não pode receber esses tiles mantendo a mesma configuração ou os mesmos marcadores.
 
 A implementação instalada do Leaflet 1.9.4 possui, em `CRS.EPSG4326`, a projeção angular `LonLat` e transformação `(1/180, 1, -1/180, 0.5)`. Sua grade tem duas colunas no nível zero e origem superior esquerda (-180, 90), características também presentes nos metadados. Essa semelhança sugere uma abordagem a investigar, mas não comprova uma integração correta. Ainda é necessário validar projeção, datum, eixos, transformação, escala, índices e renderização com pontos de controle. Não está comprovado que basta adaptar esse CRS ou que novas dependências serão dispensáveis.
