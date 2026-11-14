@@ -56,6 +56,22 @@ O ResourceURL publicado contém uma barra dupla após `1.0.0/`; o caminho normal
 
 ## Compatibilidade com o projeto — hipótese pendente de validação
 
+### Restrições de acesso — 14/11/2026
+
+**Acesso aos serviços:** as consultas de metadados e tiles documentadas acima foram realizadas por HTTPS, sem chave de API ou login solicitado. Não houve resposta 401/403 nas URLs amostradas. Nova rodada de acesso também retornou HTTP 200 para CTX preliminar e HiRISE, com Origin de localhost e de outro domínio. Uma confirmação adicional dos tiles das três camadas usou `curl -q` para desativar configurações pessoais e cabeçalhos Authorization/Cookie explicitamente removidos: os três retornaram HTTP 200 / image/png. Isso comprova acesso anônimo nessas requisições, não uma política imutável para todos os serviços NASA.
+
+**CORS:** as respostas testadas retornaram `Access-Control-Allow-Origin: *`. Esse cabeçalho permite acesso anônimo por origens diferentes, sujeito às demais políticas do navegador e da aplicação. Não foi comprovado suporte a requisições com credenciais; não enviar cookies ou tokens desnecessários. Não houve teste no navegador ou de métodos além de GET.
+
+**Incorporação por iframe:** o endereço oficial `https://mars.nasa.gov/map/` redirecionou para `https://mars.nasa.gov/maps/location/?mission=M20&site=NOW`. Na resposta final, foram encontrados dois cabeçalhos CSP: um inclui `frame-ancestors *`, mas o outro restringe a `frame-ancestors 'self' https://*.nasa.gov https://nasa.gov;`. Políticas CSP simultâneas são aplicadas em conjunto; a permissão ampla não elimina a restrição. Também foram recebidos X-Frame-Options conflitantes, incluindo SAMEORIGIN e ALLOWALL. Portanto, não considerar o mapa oficial incorporável por iframe em localhost ou em domínio próprio; não houve teste de iframe no navegador. Essa restrição não impede, por si só, carregar os tiles como imagens em uma implementação própria. Os tiles Trek testados também possuem `frame-ancestors 'self' aelp.smartsparrow.com;`, que se refere à incorporação em frames, não a `<img>`.
+
+**Limites e disponibilidade:** não foi encontrado um limite numérico específico de requisições, uma política de downloads em massa ou garantia de disponibilidade para esses endpoints na documentação oficial consultada. Nas respostas amostradas, não apareceram cabeçalhos de rate limit ou Retry-After. Isso não significa ausência de limites. Os limites publicados para APIs de `api.nasa.gov` não devem ser transferidos automaticamente para `trek.nasa.gov/tiles/`. Os testes foram pontuais, sem carga ou tentativa de provocar bloqueios.
+
+**Uso do conteúdo:** acesso público e CORS não constituem uma licença irrestrita sobre todos os produtos. A orientação geral NASA permite conteúdo educativo/informativo conforme suas diretrizes, exige reconhecimento da fonte e ressalva material de terceiros. Preservar créditos da missão, instrumento e produtores; consultar as condições de cada produto; manter a identificação de projeto independente, sem endosso da NASA. Não houve criação de conta ou recurso pago.
+
+**Implicação para a implementação:** o acesso direto anônimo aos tiles amostrados é tecnicamente permitido pelos cabeçalhos observados, sem necessidade de proxy apenas para contornar CORS. Usar tratamento de erros e requisições limitadas à visualização; não pressupor autorização para espelhar toda a pirâmide. A compatibilidade cartográfica continua sendo um critério separado.
+
+Referências: [Mars Trek WMTS](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars), [CSP: múltiplas políticas](https://www.w3.org/TR/CSP3/#multiple-policies), [diretrizes NASA para imagens e mídia](https://www.nasa.gov/nasa-brand-center/images-and-media/), [limites documentados de api.nasa.gov](https://api.nasa.gov/assets/html/authentication.html). Os resultados dos cabeçalhos são observações diretas desta sessão, não garantias futuras.
+
 ### Teste com Leaflet 1.9.4 — 14/11/2026
 
 **Resultado: compatibilidade parcial demonstrada para a indexação da grade angular; integração cartográfica completa ainda não validada.**
