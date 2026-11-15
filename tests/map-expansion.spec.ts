@@ -7,11 +7,45 @@ import {
   emptyRecords,
   routeDistance,
   routeSegments,
+  manualCoordinate,
 } from "@/lib/mars/exploration";
 import { sciencePoints } from "@/data/science-points";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Verified expansion contracts", () => {
+  it.each([
+    ["18,45", "77,40", 18.45, 77.4],
+    ["-90", "360", -90, 0],
+    ["90", "-180", 90, -180],
+    ["0", "270", 0, -90],
+  ])(
+    "normalizes manual Mars coordinates %s / %s",
+    (lat, lon, latitude, longitude) => {
+      const result = manualCoordinate(lat, lon)!;
+      expect(result.latitude).toBeCloseTo(latitude);
+      expect(result.longitude).toBeCloseTo(longitude);
+      expect(result).toMatchObject({
+        body: "Mars",
+        latitudeType: "planetocentric",
+        longitudeDirection: "east",
+      });
+    },
+  );
+  it.each([
+    ["", "0"],
+    [" ", "0"],
+    ["91", "0"],
+    ["-90.1", "0"],
+    ["0", "361"],
+    ["0", "-181"],
+    ["NaN", "0"],
+    ["0", "Infinity"],
+    ["0x10", "0"],
+    ["1e1", "0"],
+    ["1,2.3", "0"],
+  ])("rejects invalid manual input %s / %s", (lat, lon) => {
+    expect(manualCoordinate(lat, lon)).toBeUndefined();
+  });
   it.each(["ctx-regional", "mola"])(
     "checks the actual NASA metadata of %s",
     (id) => {

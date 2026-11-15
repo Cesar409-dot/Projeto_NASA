@@ -36,6 +36,8 @@ vi.mock("next/dynamic", () => ({
       routeFocus?: string;
       origin?: { name: string };
       destination?: { name: string };
+      focusCoordinate?: { latitude: number; longitude: number };
+      previewCoordinate?: { latitude: number; longitude: number };
     }) {
       return (
         <div
@@ -45,6 +47,8 @@ vi.mock("next/dynamic", () => ({
           data-route-visible={props.showRoute}
           data-origin={props.origin?.name}
           data-destination={props.destination?.name}
+          data-focus={JSON.stringify(props.focusCoordinate)}
+          data-preview={JSON.stringify(props.previewCoordinate)}
         >
           <button
             disabled={!props.adding}
@@ -97,6 +101,100 @@ function planRoute() {
     target: { value: "neretva" },
   });
 }
+describe("Coordenadas manuais e retomada do rascunho", () => {
+  it("valida, mostra a prévia, persiste e usa um marcador global em uma rota", async () => {
+    const view = render(<ScientificExplorer />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Informar coordenadas" }),
+    );
+    fireEvent.change(screen.getByLabelText("Nome do marcador"), {
+      target: { value: "Ponto global" },
+    });
+    fireEvent.change(screen.getByLabelText("Latitude"), {
+      target: { value: "91" },
+    });
+    fireEvent.change(screen.getByLabelText("Longitude"), {
+      target: { value: "270" },
+    });
+    fireEvent.submit(
+      screen.getByLabelText("Nome do marcador").closest("form")!,
+    );
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    fireEvent.change(screen.getByLabelText("Latitude"), {
+      target: { value: "-12,5" },
+    });
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("map").getAttribute("data-layer-id")).toBe(
+        "mola",
+      );
+      expect(
+        JSON.parse(screen.getByTestId("map").getAttribute("data-preview")!),
+      ).toMatchObject({ latitude: -12.5, longitude: -90 });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar marcador" }));
+    const marker = parseRecords(localStorage.getItem(STORAGE_KEY)!).markers[0];
+    expect(marker.layerId).toBe("manual");
+    view.unmount();
+    render(<ScientificExplorer />);
+    fireEvent.change(screen.getByLabelText("Origem"), {
+      target: { value: marker.id },
+    });
+    fireEvent.change(screen.getByLabelText("Destino"), {
+      target: { value: "belva" },
+    });
+    expect(screen.getByTestId("map").getAttribute("data-layer-id")).toBe(
+      "mola",
+    );
+    expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+      "Ponto global",
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver no mapa Ponto global" }),
+    );
+    expect(
+      JSON.parse(screen.getByTestId("map").getAttribute("data-focus")!),
+    ).toEqual(marker.coordinate);
+  });
+  it("mantém os campos ao escolher outra posição no mapa e ao cancelar essa escolha", () => {
+    render(<ScientificExplorer />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Informar coordenadas" }),
+    );
+    fireEvent.change(screen.getByLabelText("Nome do marcador"), {
+      target: { value: "Rascunho preservado" },
+    });
+    fireEvent.change(screen.getByLabelText("Descrição"), {
+      target: { value: "Coleta planejada" },
+    });
+    fireEvent.click(screen.getByLabelText("Posição no mapa"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Selecionar posição no mapa" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar marcador" }));
+    expect(
+      (screen.getByLabelText("Nome do marcador") as HTMLInputElement).value,
+    ).toBe("Rascunho preservado");
+    fireEvent.click(screen.getByLabelText("Posição no mapa"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Selecionar posição no mapa" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Selecionar posição de teste" }),
+    );
+    expect(
+      (screen.getByLabelText("Descrição") as HTMLTextAreaElement).value,
+    ).toBe("Coleta planejada");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar marcador" }));
+    expect(
+      parseRecords(localStorage.getItem(STORAGE_KEY)!).markers[0],
+    ).toMatchObject({
+      name: "Rascunho preservado",
+      description: "Coleta planejada",
+      layerId: "ctx",
+      coordinate: { latitude: 18.45, longitude: 77.4 },
+    });
+  });
+});
 function fillMission(name = "Coleta no delta") {
   fireEvent.change(screen.getByLabelText("Nome da missão"), {
     target: { value: name },
