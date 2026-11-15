@@ -17,9 +17,6 @@ import { sciencePoints } from "@/data/science-points";
 vi.mock("@/components/map/useLayerHealth", () => ({
   useLayerHealth: () => ({
     health: {
-      ctx: { state: "ready" },
-      hirise: { state: "ready" },
-      "ctx-regional": { state: "ready" },
       mola: { state: "ready" },
     },
     fail: vi.fn(),
@@ -102,6 +99,39 @@ function planRoute() {
   });
 }
 describe("Coordenadas manuais e retomada do rascunho", () => {
+  it("alterna somente MOLA e Imagem oficial sem modificar registros antigos nem a rota", () => {
+    const marker = {
+      id: "legacy-ctx",
+      name: "Registro anterior",
+      description: "Preservar origem",
+      category: "Ciência",
+      visited: true,
+      layerId: "ctx",
+      coordinate: { ...sciencePoints[0].coordinate },
+    };
+    const original = JSON.stringify({
+      version: 1,
+      markers: [marker],
+      missions: [],
+    });
+    localStorage.setItem(STORAGE_KEY, original);
+    render(<ScientificExplorer />);
+    planRoute();
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    for (const name of [/Imagem oficial/, /MOLA/, /Imagem oficial/, /MOLA/]) {
+      fireEvent.click(screen.getByRole("radio", { name }));
+      expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+        sciencePoints[0].name,
+      );
+      expect(screen.getByTestId("map").getAttribute("data-destination")).toBe(
+        sciencePoints[1].name,
+      );
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(original);
+    }
+    expect(
+      screen.getByRole("button", { name: "Editar marcador Registro anterior" }),
+    ).toBeTruthy();
+  });
   it("valida, mostra a prévia, persiste e usa um marcador global em uma rota", async () => {
     const view = render(<ScientificExplorer />);
     fireEvent.click(
@@ -190,7 +220,7 @@ describe("Coordenadas manuais e retomada do rascunho", () => {
     ).toMatchObject({
       name: "Rascunho preservado",
       description: "Coleta planejada",
-      layerId: "ctx",
+      layerId: "mola",
       coordinate: { latitude: 18.45, longitude: 77.4 },
     });
   });
@@ -313,9 +343,7 @@ describe("Mars Maps: exploração persistente", { timeout: 20000 }, () => {
   it("does not invent coordinates on the local image or overwrite damaged records", () => {
     localStorage.setItem(STORAGE_KEY, "dados danificados");
     render(<ScientificExplorer />);
-    fireEvent.click(
-      screen.getByRole("radio", { name: /Imagem oficial local/ }),
-    );
+    fireEvent.click(screen.getByRole("radio", { name: /Imagem oficial/ }));
     expect(
       (
         screen.getByRole("button", {
@@ -417,7 +445,7 @@ describe("Cadastro de marcadores", { timeout: 20000 }, () => {
       description: "Observação registrada pelo astronauta.",
       category: "Risco",
       visited: true,
-      layerId: "ctx",
+      layerId: "mola",
       coordinate: {
         body: "Mars",
         latitudeType: "planetocentric",
@@ -994,10 +1022,10 @@ describe(
         sciencePoints[0].name,
       );
     });
-    it.each(["ctx-regional", "mola"])(
+    it.each(["regional", "global"])(
       "seleciona a cobertura %s ao carregar uma missão fora da base local",
       (layerId) => {
-        const global = layerId === "mola";
+        const global = layerId === "global";
         const origin = {
           id: "simulated-origin",
           name: "Origem simulada",
@@ -1019,11 +1047,11 @@ describe(
         const { mission } = seedRouteMission({ origin, destination });
         render(<ScientificExplorer />);
         expect(screen.getByTestId("map").getAttribute("data-layer-id")).toBe(
-          "ctx",
+          "mola",
         );
         fireEvent.click(screen.getByRole("button", { name: mission.name }));
         expect(screen.getByTestId("map").getAttribute("data-layer-id")).toBe(
-          layerId,
+          "mola",
         );
         expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
           origin.name,

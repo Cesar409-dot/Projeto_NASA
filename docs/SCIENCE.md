@@ -2,7 +2,7 @@
 
 Consulta inicial: 14/11/2026. Textos são sínteses educativas, não citações literais.
 
-**Estado atual:** a [fase 2](PHASE_2.md) utiliza camadas controladas CTX/HiRISE, coordenadas USGS/IAU para três centros e uma estimativa geométrica com raio de Marte. As referências antigas abaixo registram também o protótipo inicial.
+**Estado atual:** o mapa oferece MOLA — Relevo global e Imagem oficial de Jezero. Coordenadas USGS/IAU para três centros e a estimativa geométrica com raio de Marte foram preservadas. Veja a [configuração cartográfica atual](MAP_DISPLAY.md); a [fase 2](PHASE_2.md) e as referências abaixo registram também integrações anteriores.
 
 ## Mars Maps
 
@@ -17,7 +17,7 @@ Na fase 1, as posições eram editoriais. Agora, `science-points.ts` contém coo
 
 ## Mars Trek / integração futura
 
-Consulte a [investigação dos serviços](MAPS_FEASIBILITY.md) e a [integração da fase 2](PHASE_2.md). A imagem local é mantida como fallback; os dois produtos controlados são habilitados apenas após verificação no cliente.
+Consulte a [investigação dos serviços](MAPS_FEASIBILITY.md) e a [integração histórica da fase 2](PHASE_2.md). Atualmente, somente MOLA é habilitado após verificação no cliente; a imagem local de Jezero funciona também como fallback.
 
 [Mars Trek](https://trek.nasa.gov/mars/) e [documentação oficial WMTS](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars).
 
@@ -25,7 +25,7 @@ Serviços OGC RESTful WMTS incluem MGS/MOLA, MOC e combinações MOLA/HRSC. Prod
 
 Antes de integrar: selecionar cobertura e resolução; ler GetCapabilities e metadados; confirmar origem, dimensões e escalas da matriz e convenção de longitude; configurar projeção planetária; validar alinhamento por pontos de controle. Não aplicar Web Mercator terrestre silenciosamente. Exibir créditos, resolução e falhas de carregamento.
 
-A imagem local funciona sem servidor de tiles. As duas camadas ativas vêm da missão MRO. Não há integração validada de topografia ou fusão de múltiplas missões nesta fase.
+A imagem local funciona sem servidor de tiles. MOLA vem da missão Mars Global Surveyor e apresenta relevo sombreado colorido qualitativo. Não oferece leitura de altitude, declividade ou navegação operacional validada.
 
 ## Mind Space
 

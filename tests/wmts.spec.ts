@@ -4,15 +4,13 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { nasaLayers } from "@/data/map-layers";
 import { validateWmts, probeLayer } from "@/lib/mars/wmts";
 const xml = readFileSync(
-  resolve("tests/fixtures/ctx-capabilities.xml"),
+  resolve("tests/fixtures/mola-capabilities.xml"),
   "utf8",
 );
-const hiriseXml = readFileSync(resolve("tests/fixtures/hirise-capabilities.xml"), "utf8");
 afterEach(() => vi.unstubAllGlobals());
 describe("WMTS availability gate", () => {
-  it("accepts both controlled products and rejects a changed grid or Earth CRS", () => {
+  it("accepts MOLA and rejects a changed grid or Earth CRS", () => {
     expect(() => validateWmts(xml, nasaLayers[0])).not.toThrow();
-    expect(() => validateWmts(hiriseXml, nasaLayers[1])).not.toThrow();
     expect(() =>
       validateWmts(
         xml.replace("<TileWidth>256</TileWidth>", "<TileWidth>512</TileWidth>"),

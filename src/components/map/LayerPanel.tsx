@@ -49,10 +49,18 @@ export function LayerPanel({
             onChange={() => onChange("image")}
           />
           <span>
-            Imagem oficial local<small>Sem rede · anotações esquemáticas</small>
+            Imagem oficial
+            <small>Recorte de Jezero · sem georreferenciamento</small>
           </span>
         </label>
       </fieldset>
+      {activeId === "image" && (
+        <p className={s.small}>
+          Esta imagem cobre apenas uma região de Jezero, não todo Marte. Os
+          pontos e conexões são esquemáticos. Para coordenadas e marcadores
+          geográficos, use MOLA.
+        </p>
+      )}
       <div className={s.health} role="status">
         {nasaLayers
           .filter((l) => health[l.id]?.state === "error")

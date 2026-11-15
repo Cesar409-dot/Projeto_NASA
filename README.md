@@ -26,7 +26,7 @@ Não requer conta, chave, banco de dados, arquivo `.env` ou recurso pago.
 ## Páginas e interações
 
 - `/`: apresentação, ilustração artística de Marte e acesso às três frentes.
-- `/mars-maps`: camadas NASA controladas CTX e HiRISE verificadas antes de habilitar, carregamento e erro com fallback local, três centros científicos selecionáveis, origem/destino, arco e distância geométrica marciana, inversão/limpeza e painel de missão integrado.
+- `/mars-maps`: MOLA — Relevo global (NASA/WMTS verificado) e Imagem oficial (recorte de Jezero sem georreferenciamento), enquadramento responsivo com zoom limitado à resolução disponível, três centros científicos selecionáveis, marcadores próprios, origem/destino, arco e distância geométrica marciana, inversão/limpeza e missões persistentes. Veja [configuração cartográfica atual](docs/MAP_DISPLAY.md).
 - `/mind-space`: check-in e cronômetro preservados; três cenários interativos sobre isolamento, comunicação e convivência sob pressão. Nenhuma resposta é persistida ou transmitida.
 - `/mars-greenhouse`: seleção e comparação qualitativa de alface, batata e rabanete; água, luz, nutrientes, ambiente e limitações, com fontes e estrutura para revisão de Química.
 - Página 404 com retorno ao início.

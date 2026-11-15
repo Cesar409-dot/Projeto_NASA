@@ -41,7 +41,7 @@ export function ScientificExplorer() {
   const [wide, setWide] = useState(false);
   const [scienceOpen, setScienceOpen] = useState(false);
   const [selectedId, setSelectedId] = useState("belva");
-  const [layerId, setLayerId] = useState("ctx");
+  const [layerId, setLayerId] = useState("mola");
   const [showPoints, setShowPoints] = useState(true),
     [showRoute, setShowRoute] = useState(true);
   const [route, dispatch] = useReducer(routeReducer, emptyRoute);

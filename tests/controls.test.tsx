@@ -15,7 +15,9 @@ import { MissionSummary } from "@/components/map/MissionSummary";
 import { sciencePoints } from "@/data/science-points";
 import { emptyRoute, routeReducer } from "@/lib/mars/route-state";
 
-beforeEach(() => { vi.spyOn(console, "error"); });
+beforeEach(() => {
+  vi.spyOn(console, "error");
+});
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
@@ -67,14 +69,13 @@ describe("Marswalk controls", () => {
   it("keeps unavailable layers disabled and allows selecting the local fallback", () => {
     const retry = vi.fn();
     function Layers() {
-      const [id, setId] = useState("ctx");
+      const [id, setId] = useState("mola");
       return (
         <LayerPanel
           activeId={id}
           onChange={setId}
           health={{
-            ctx: { state: "ready", message: "ok" },
-            hirise: { state: "error", message: "offline" },
+            mola: { state: "error", message: "offline" },
           }}
           retry={retry}
         />
@@ -82,19 +83,21 @@ describe("Marswalk controls", () => {
     }
     render(<Layers />);
     expect(
-      (screen.getByRole("radio", { name: /HiRISE/ }) as HTMLInputElement)
+      (screen.getByRole("radio", { name: /MOLA/ }) as HTMLInputElement)
         .disabled,
     ).toBe(true);
-    fireEvent.click(
-      screen.getByRole("radio", { name: /Imagem oficial local/ }),
-    );
+    fireEvent.click(screen.getByRole("radio", { name: /Imagem oficial/ }));
     expect(
       (
         screen.getByRole("radio", {
-          name: /Imagem oficial local/,
+          name: /Imagem oficial/,
         }) as HTMLInputElement
       ).checked,
     ).toBe(true);
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    expect(
+      screen.getByText(/Esta imagem cobre apenas uma região de Jezero/),
+    ).toBeTruthy();
     fireEvent.click(
       screen.getByRole("button", { name: "Verificar serviços novamente" }),
     );

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { CRS, DomEvent, point, type LatLngBoundsExpression } from "leaflet";
+import { CRS, DomEvent } from "leaflet";
 import {
   MapContainer,
   TileLayer,
@@ -16,14 +16,12 @@ import type { MapPoint, PersonalMarker } from "@/lib/mars/exploration";
 import { routeDistance, routeSegments } from "@/lib/mars/exploration";
 import type { MarsCoordinate } from "@/lib/mars/coordinates";
 import { sciencePoints, type SciencePoint } from "@/data/science-points";
-import { tileTemplate, type NasaLayer } from "@/data/map-layers";
+import { officialImage, tileTemplate, type NasaLayer } from "@/data/map-layers";
 import { marsLatLng } from "@/lib/mars/coordinates";
 import { marsAngularCRS } from "@/lib/mars/crs";
+import { frameCoverage } from "@/lib/mars/map-view";
 import s from "../map.module.css";
-const imageBounds: LatLngBoundsExpression = [
-  [0, 0],
-  [1000, 1600],
-];
+const imageBounds = officialImage.bounds;
 
 function ViewControl({
   selected,
@@ -42,53 +40,30 @@ function ViewControl({
       DomEvent.off(button);
     };
   }, []);
-  const previousSelected = useRef<string | undefined>(undefined);
+  const previousSelected = useRef(selected.id);
+  useEffect(() => {
+    const bounds = layer?.bounds ?? imageBounds;
+    const nativeMinZoom = layer ? 0 : -8;
+    const maxZoom = layer?.maxNativeZoom ?? officialImage.maxZoom;
+    frameCoverage(map, bounds, nativeMinZoom, maxZoom, true);
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ pan: false });
+      frameCoverage(map, bounds, nativeMinZoom, maxZoom);
+    });
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map, layer]);
   useEffect(() => {
     const changedPoint = previousSelected.current !== selected.id;
     previousSelected.current = selected.id;
+    if (!changedPoint) return;
     if (!layer) {
       map.panTo(selected.imagePosition, { animate: false });
       return;
     }
-    const minZoom =
-      layer.id === "mola"
-        ? 1
-        : Math.min(
-            layer.maxNativeZoom,
-            Math.max(1, map.getBoundsZoom(layer.bounds, false, point(32, 32))),
-          );
-    map.setMaxZoom(layer.maxNativeZoom);
-    map.setMinZoom(minZoom);
-    map.setMaxBounds(layer.bounds);
-    const inside = (lat: number, lon: number) =>
-      lat >= layer.bounds[0][0] &&
-      lat <= layer.bounds[1][0] &&
-      lon >= layer.bounds[0][1] &&
-      lon <= layer.bounds[1][1];
     const [lat, lon] = marsLatLng(selected.coordinate);
-    const current = map.getCenter();
-    const zoom = Math.max(
-      minZoom,
-      Math.min(layer.maxNativeZoom, map.getZoom()),
-    );
-    if (changedPoint && inside(lat, lon))
-      map.setView([lat, lon], layer.id === "mola" && zoom < 7 ? 7 : zoom, {
-        animate: false,
-      });
-    else if (inside(current.lat, current.lng))
-      map.setView(current, zoom, { animate: false });
-    else
-      map.fitBounds(layer.bounds, {
-        padding: [16, 16],
-        maxZoom: layer.maxNativeZoom,
-        animate: false,
-      });
+    map.setView([lat, lon], map.getZoom(), { animate: false });
   }, [map, selected, layer]);
-  useEffect(() => {
-    const observer = new ResizeObserver(() => map.invalidateSize());
-    observer.observe(map.getContainer());
-    return () => observer.disconnect();
-  }, [map]);
   return (
     <button
       ref={control}
@@ -96,8 +71,13 @@ function ViewControl({
       className={s.centerMap}
       onClick={(event) => {
         event.stopPropagation();
-        if (layer) map.fitBounds(layer.bounds);
-        else map.fitBounds(imageBounds);
+        frameCoverage(
+          map,
+          layer?.bounds ?? imageBounds,
+          layer ? 0 : -8,
+          layer?.maxNativeZoom ?? officialImage.maxZoom,
+          true,
+        );
       }}
     >
       Recentralizar mapa
@@ -259,16 +239,6 @@ export default function LeafletCanvas({
     const timer = setTimeout(() => onLayerError(layer.id), 15000);
     return () => clearTimeout(timer);
   }, [loading, layer, onLayerError]);
-  const outside =
-    layer &&
-    !sciencePoints.some(
-      (p) =>
-        p.id === selected.id &&
-        p.coordinate.latitude >= layer.bounds[0][0] &&
-        p.coordinate.latitude <= layer.bounds[1][0] &&
-        p.coordinate.longitude >= layer.bounds[0][1] &&
-        p.coordinate.longitude <= layer.bounds[1][1],
-    );
   return (
     <div className={s.canvasWrap}>
       {loading && (
@@ -276,11 +246,11 @@ export default function LeafletCanvas({
           Carregando base cartográfica…
         </span>
       )}
-      {outside && (
-        <span className={s.coverageNotice} role="status">
-          Local fora desta cobertura. Selecione CTX regional ou MOLA para
-          contexto.
-        </span>
+      {!layer && (
+        <p className={s.mapAlert}>
+          Imagem oficial: recorte de Jezero, sem cobertura global ou
+          georreferenciamento. Pontos e conexões são esquemáticos.
+        </p>
       )}
       {partialError && (
         <span className={s.coverageNotice} role="status">
@@ -306,10 +276,11 @@ export default function LeafletCanvas({
         className={s.map}
         crs={layer ? marsAngularCRS : CRS.Simple}
         bounds={layer?.bounds ?? imageBounds}
-        minZoom={layer ? 1 : -2}
+        minZoom={layer ? 0 : -8}
         maxBounds={layer?.bounds ?? imageBounds}
-        maxBoundsViscosity={0.8}
-        maxZoom={layer ? layer.maxNativeZoom : 2}
+        maxBoundsViscosity={1}
+        maxZoom={layer ? layer.maxNativeZoom : officialImage.maxZoom}
+        zoomSnap={0.25}
         scrollWheelZoom={true}
         attributionControl={true}
         zoomControl={false}
@@ -330,6 +301,8 @@ export default function LeafletCanvas({
             key={layer.id}
             url={tileTemplate(layer)}
             tileSize={256}
+            minZoom={0}
+            minNativeZoom={0}
             noWrap={true}
             tms={false}
             maxNativeZoom={layer.maxNativeZoom}
