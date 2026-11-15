@@ -10,8 +10,10 @@ export function RoutePlanner({
   route,
   dispatch,
   points = sciencePoints,
+  hasSavedRoute = false,
 }: {
   points?: MapPoint[];
+  hasSavedRoute?: boolean;
   route: RouteState;
   dispatch: Dispatch<RouteAction>;
 }) {
@@ -51,7 +53,7 @@ export function RoutePlanner({
         </button>
         <button
           className={u.choice}
-          disabled={!route.origin && !route.destination}
+          disabled={!route.origin && !route.destination && !hasSavedRoute}
           onClick={() => dispatch({ type: "clear" })}
         >
           Limpar rota

@@ -23,7 +23,6 @@ export function MapDialog({
       className={s.dialog}
       aria-labelledby="map-dialog-title"
       onCancel={onClose}
-      onClose={onClose}
     >
       <div className={u.row}>
         <h2 id="map-dialog-title">{title}</h2>

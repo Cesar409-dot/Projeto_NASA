@@ -143,6 +143,7 @@ export function ScientificExplorer() {
           <RoutePlanner
             route={route}
             points={points}
+            hasSavedRoute={!!savedRoute}
             dispatch={(action) => {
               setSavedRoute(undefined);
               dispatch(action);
