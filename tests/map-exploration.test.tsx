@@ -11,6 +11,7 @@ import {
   STORAGE_KEY,
   parseRecords,
   routeDistance,
+  type MissionRoute,
 } from "@/lib/mars/exploration";
 import { sciencePoints } from "@/data/science-points";
 vi.mock("@/components/map/useLayerHealth", () => ({
@@ -30,12 +31,18 @@ vi.mock("next/dynamic", () => ({
     function Canvas(props: {
       adding: boolean;
       onPosition: (p: (typeof sciencePoints)[0]["coordinate"]) => void;
+      layer?: { id: string };
+      showRoute: boolean;
+      routeFocus?: string;
       origin?: { name: string };
       destination?: { name: string };
     }) {
       return (
         <div
           data-testid="map"
+          data-layer-id={props.layer?.id}
+          data-route-id={props.routeFocus}
+          data-route-visible={props.showRoute}
           data-origin={props.origin?.name}
           data-destination={props.destination?.name}
         >
@@ -739,3 +746,218 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe(
+  "Integração de marcadores e missões com rotas",
+  { timeout: 20000 },
+  () => {
+    function seedRouteMission(savedRoute?: MissionRoute) {
+      const markers = ["Marco alfa", "Marco beta"].map((name, index) => ({
+        id: "personal-route-" + index,
+        name,
+        description: "Registro pessoal",
+        category: "Exploração" as const,
+        visited: false,
+        layerId: "ctx",
+        coordinate: {
+          ...sciencePoints[0].coordinate,
+          latitude: 18.45 + index * 0.01,
+          longitude: 77.4 + index * 0.01,
+        },
+      }));
+      const mission = {
+        id: "mission-route",
+        name: "Missão entre marcadores",
+        objective: "Comparar registros pessoais",
+        description: "",
+        date: "2026-12-01",
+        route: savedRoute ?? {
+          origin: structuredClone(markers[0]),
+          destination: structuredClone(markers[1]),
+        },
+      };
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ version: 1, markers, missions: [mission] }),
+      );
+      return { markers, mission };
+    }
+    it("usa dois marcadores próprios como extremos, impede duplicação, inverte e cadastra a rota invertida", () => {
+      const { markers } = seedRouteMission();
+      render(<ScientificExplorer />);
+      fireEvent.change(screen.getByLabelText("Origem"), {
+        target: { value: markers[0].id },
+      });
+      expect(
+        (
+          within(screen.getByLabelText("Destino")).getByRole("option", {
+            name: "Marco alfa",
+          }) as HTMLOptionElement
+        ).disabled,
+      ).toBe(true);
+      fireEvent.change(screen.getByLabelText("Destino"), {
+        target: { value: markers[1].id },
+      });
+      const distanceBefore = screen
+        .getAllByText(/^≈ /)
+        .map((element) => element.textContent);
+      expect(distanceBefore.length).toBeGreaterThan(0);
+      expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+        "Marco alfa",
+      );
+      expect(screen.getByTestId("map").getAttribute("data-destination")).toBe(
+        "Marco beta",
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Inverter" }));
+      expect((screen.getByLabelText("Origem") as HTMLSelectElement).value).toBe(
+        markers[1].id,
+      );
+      expect(
+        (screen.getByLabelText("Destino") as HTMLSelectElement).value,
+      ).toBe(markers[0].id);
+      expect(
+        screen.getAllByText(/^≈ /).map((element) => element.textContent),
+      ).toEqual(distanceBefore);
+      fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+      fillMission("Rota invertida");
+      fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
+      const saved = parseRecords(
+        localStorage.getItem(STORAGE_KEY)!,
+      ).missions.find((m) => m.name === "Rota invertida")!;
+      expect(saved.route.origin).toEqual(markers[1]);
+      expect(saved.route.destination).toEqual(markers[0]);
+    });
+    it("destaca a rota salva mesmo se oculta e remove o destaque ao planejar ou limpar, sem alterar a missão", () => {
+      const { mission } = seedRouteMission();
+      render(<ScientificExplorer />);
+      fireEvent.click(screen.getByLabelText("Mostrar conexão"));
+      expect(screen.getByTestId("map").getAttribute("data-route-visible")).toBe(
+        "false",
+      );
+      fireEvent.click(screen.getByRole("button", { name: mission.name }));
+      expect(screen.getByTestId("map").getAttribute("data-route-visible")).toBe(
+        "true",
+      );
+      expect(screen.getByTestId("map").getAttribute("data-route-id")).toBe(
+        mission.id,
+      );
+      expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+        "Marco alfa",
+      );
+      planRoute();
+      expect(
+        screen.getByTestId("map").getAttribute("data-route-id"),
+      ).toBeNull();
+      expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+        sciencePoints[0].name,
+      );
+      fireEvent.click(screen.getByRole("button", { name: mission.name }));
+      fireEvent.click(screen.getByRole("button", { name: "Limpar rota" }));
+      expect(screen.getByTestId("map").getAttribute("data-origin")).toBeNull();
+      expect(
+        screen.getByTestId("map").getAttribute("data-route-id"),
+      ).toBeNull();
+      expect(
+        parseRecords(localStorage.getItem(STORAGE_KEY)!).missions[0],
+      ).toEqual(mission);
+    });
+    it("troca a rota de uma missão somente após escolher a rota atual e salvar a edição", () => {
+      const { mission } = seedRouteMission();
+      render(<ScientificExplorer />);
+      planRoute();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Editar missão " + mission.name }),
+      );
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText(/Marco alfa → Marco beta/)).toBeTruthy();
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Usar rota atual do mapa" }),
+      );
+      expect(
+        within(dialog).getByText(/Cratera Belva → Neretva Vallis/),
+      ).toBeTruthy();
+      expect(
+        parseRecords(localStorage.getItem(STORAGE_KEY)!).missions[0],
+      ).toEqual(mission);
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Salvar missão" }),
+      );
+      const missions = parseRecords(
+        localStorage.getItem(STORAGE_KEY)!,
+      ).missions;
+      expect(missions).toHaveLength(1);
+      expect(missions[0].id).toBe(mission.id);
+      expect(missions[0].route).toEqual({
+        origin: sciencePoints[0],
+        destination: sciencePoints[1],
+      });
+      fireEvent.click(screen.getByRole("button", { name: mission.name }));
+      expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+        sciencePoints[0].name,
+      );
+    });
+    it.each(["ctx-regional", "mola"])(
+      "seleciona a cobertura %s ao carregar uma missão fora da base local",
+      (layerId) => {
+        const global = layerId === "mola";
+        const origin = {
+          id: "simulated-origin",
+          name: "Origem simulada",
+          coordinate: {
+            ...sciencePoints[0].coordinate,
+            latitude: global ? 0 : 18.5,
+            longitude: global ? 0 : 78,
+          },
+        };
+        const destination = {
+          id: "simulated-destination",
+          name: "Destino simulado",
+          coordinate: {
+            ...origin.coordinate,
+            latitude: origin.coordinate.latitude + 0.1,
+            longitude: origin.coordinate.longitude + 0.1,
+          },
+        };
+        const { mission } = seedRouteMission({ origin, destination });
+        render(<ScientificExplorer />);
+        expect(screen.getByTestId("map").getAttribute("data-layer-id")).toBe(
+          "ctx",
+        );
+        fireEvent.click(screen.getByRole("button", { name: mission.name }));
+        expect(screen.getByTestId("map").getAttribute("data-layer-id")).toBe(
+          layerId,
+        );
+        expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+          origin.name,
+        );
+        expect(screen.getByTestId("map").getAttribute("data-destination")).toBe(
+          destination.name,
+        );
+      },
+    );
+    it("restaura a rota em planejamento ao excluir a missão destacada e preserva os marcadores", () => {
+      const { markers, mission } = seedRouteMission();
+      render(<ScientificExplorer />);
+      planRoute();
+      fireEvent.click(screen.getByRole("button", { name: mission.name }));
+      expect(screen.getByTestId("map").getAttribute("data-route-id")).toBe(
+        mission.id,
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Excluir missão " + mission.name }),
+      );
+      expect(
+        screen.getByTestId("map").getAttribute("data-route-id"),
+      ).toBeNull();
+      expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+        sciencePoints[0].name,
+      );
+      expect(screen.getByTestId("map").getAttribute("data-destination")).toBe(
+        sciencePoints[1].name,
+      );
+      const records = parseRecords(localStorage.getItem(STORAGE_KEY)!);
+      expect(records.missions).toEqual([]);
+      expect(records.markers).toEqual(markers);
+    });
+  },
+);

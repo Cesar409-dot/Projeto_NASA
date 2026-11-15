@@ -54,7 +54,7 @@ Executar `npm.cmd test`, `npm.cmd run typecheck` e `npm.cmd run build`. Testes e
 
 ## Resultado da validação — 15/11/2026
 
-- 7 testes matemáticos e 21 testes Vitest passaram (28 no total).
+- 7 testes matemáticos e 68 testes Vitest passaram (75 no total).
 - TypeScript e lint dos arquivos da frente passaram.
 - Build de produção com npm.cmd run build -- --webpack passou e gerou a rota estática /mars-maps. Webpack foi utilizado após o watcher de desenvolvimento Turbopack apresentar atualizações contínuas no diretório sincronizado pelo OneDrive. Não houve mudança da configuração do projeto.
 - A verificação visual permanece pendente, pelo encerramento do Computer Use descrito acima.
@@ -64,5 +64,9 @@ Executar `npm.cmd test`, `npm.cmd run typecheck` e `npm.cmd run build`. Testes e
 - src/components/map/: LeafletCanvas.tsx, MapDialog.tsx, MarkerEditor.tsx, MissionManager.tsx, MissionSummary.tsx, RoutePlanner.tsx, ScientificExplorer.tsx e useExplorationRecords.ts.
 - src/components/map.module.css e src/data/map-layers.ts.
 - src/lib/mars/: exploration.ts e wmts.ts.
-- tests/: map-exploration.test.tsx, map-expansion.spec.ts e fixtures CTX regional/MOLA.
+- tests/: map-exploration.test.tsx, map-expansion.spec.ts, map-persistence.spec.ts, map-forms.test.tsx e fixtures CTX regional/MOLA.
 - docs/MARS_MAPS_EXPANSION.md.
+
+## Ampliação da cobertura de testes
+
+Foram acrescentados cenários de cadastro, edição e exclusão de marcadores, persistência e conflitos entre abas, cadastro e validação de missões e integração com rotas. A integração cobre extremos próprios, inversão, destaque e limpeza de rotas salvas, substituição explícita da rota de uma missão, troca de cobertura CTX regional/MOLA e restauração do planejamento ao excluir uma missão destacada. Os testes de integração conferem os dados entregues ao canvas substituto; não comprovam renderização real de tiles ou polilinhas no navegador. Nenhum código de produção foi alterado nesta ampliação.
