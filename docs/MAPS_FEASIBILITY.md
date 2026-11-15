@@ -1,5 +1,7 @@
 # Mapas reais de Jezero — verificação de viabilidade
 
+**Registro histórico de investigação.** A fase 2 implementa um adaptador angular explícito, dois produtos controlados com verificação de disponibilidade e fallback, pontos de catálogo e estimativa geométrica. Consulte [PHASE_2.md](PHASE_2.md) para o estado atual. As limitações de datum, alinhamento absoluto e validação visual registradas aqui continuam relevantes; os testes de pesquisa abaixo não são apresentados como certificação operacional.
+
 Verificação em 14/11/2026. Resultado: **disponibilidade de metadados e tiles confirmada nas amostras testadas; compatibilidade com Leaflet ainda não comprovada**. Este estudo não altera a aplicação.
 
 ## Revalidação de disponibilidade — 14/11/2026, aproximadamente 13:04 BRT

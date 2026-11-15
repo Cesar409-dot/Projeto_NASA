@@ -2,6 +2,8 @@
 
 Consulta inicial: 14/11/2026. Textos são sínteses educativas, não citações literais.
 
+**Estado atual:** a [fase 2](PHASE_2.md) utiliza camadas controladas CTX/HiRISE, coordenadas USGS/IAU para três centros e uma estimativa geométrica com raio de Marte. As referências antigas abaixo registram também o protótipo inicial.
+
 ## Mars Maps
 
 Consulte também os [créditos e referências por produto cartográfico](MAP_ATTRIBUTION.md), incluindo as pendências do mosaico CTX preliminar.
@@ -11,11 +13,11 @@ Consulte também os [créditos e referências por produto cartográfico](MAP_ATT
 - [Perseverance Explores the Jezero Crater Delta](https://science.nasa.gov/resource/perseverance-explores-the-jezero-crater-delta/): interesse científico do delta, sem afirmar descoberta de vida.
 - [Mars 2020 / Perseverance](https://science.nasa.gov/mission/mars-2020-perseverance/).
 
-As posições em `src/data/mission.ts` são editoriais no plano da imagem. Não são posições oficiais de amostras, rover ou coleta. Linhas conectam os pontos pela ordem de seleção. Não há escala métrica, direção norte, coordenadas de cursor, altitude ou distância calculada.
+Na fase 1, as posições eram editoriais. Agora, `science-points.ts` contém coordenadas catalogadas e posições editoriais separadas para o fallback. As fontes, convenções e distâncias geométricas estão detalhadas em `PHASE_2.md`. Não há posição atual de rover, elevação ou rota de caminhada validada.
 
 ## Mars Trek / integração futura
 
-Atualização: consulte a [verificação prática de serviços de Jezero](MAPS_FEASIBILITY.md), que registra os endpoints, metadados, tiles e compatibilidade com Leaflet efetivamente testados. A aplicação ainda utiliza a imagem local.
+Consulte a [investigação dos serviços](MAPS_FEASIBILITY.md) e a [integração da fase 2](PHASE_2.md). A imagem local é mantida como fallback; os dois produtos controlados são habilitados apenas após verificação no cliente.
 
 [Mars Trek](https://trek.nasa.gov/mars/) e [documentação oficial WMTS](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars).
 
@@ -23,9 +25,11 @@ Serviços OGC RESTful WMTS incluem MGS/MOLA, MOC e combinações MOLA/HRSC. Prod
 
 Antes de integrar: selecionar cobertura e resolução; ler GetCapabilities e metadados; confirmar origem, dimensões e escalas da matriz e convenção de longitude; configurar projeção planetária; validar alinhamento por pontos de controle. Não aplicar Web Mercator terrestre silenciosamente. Exibir créditos, resolução e falhas de carregamento.
 
-A imagem local funciona sem servidor de tiles. A entrega não representa integração de múltiplas missões ou topografia validada.
+A imagem local funciona sem servidor de tiles. As duas camadas ativas vêm da missão MRO. Não há integração validada de topografia ou fusão de múltiplas missões nesta fase.
 
 ## Mind Space
+
+Os cenários da fase 2 usam [NASA: experiências de isolamento](https://www.nasa.gov/humans-in-space/isolation-what-can-we-learn-from-the-experiences-of-nasa-astronauts/) e [NASA: fatores comportamentais e distância da Terra](https://www.nasa.gov/reference/risk-of-behavioral-changes-and-psychiatric-disorders/). Mensagens e atividades são adaptações educativas do projeto, não protocolos oficiais.
 
 - [NASA — The Human Body in Space](https://www.nasa.gov/humans-in-space/the-human-body-in-space/): isolamento e atividades da tripulação.
 - [NASA — Space gardening and isolation](https://www.nasa.gov/humans-in-space/can-space-gardening-help-astronauts-cope-with-isolation/): interação com plantas e isolamento.
@@ -34,8 +38,10 @@ Check-in e cronômetro são recursos demonstrativos, sem protocolo clínico, pon
 
 ## Mars Greenhouse
 
+As culturas ativas são alface, batata e rabanete. Referências adicionais: [experimento primário de tubérculos em voo espacial](https://pubmed.ncbi.nlm.nih.gov/11540455/) e [NASA Plant Habitat-02](https://science.nasa.gov/biological-physical/investigations/plant-habitat-02-wvqpm/). Necessidades são descritas qualitativamente. O conjunto anterior com mizuna e tomate pertence à fase 1 e não é o conteúdo atual da comparação.
+
 - [NASA — Growing Plants in Space](https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/): Veggie e culturas na ISS.
 - [NASA — Veg-05](https://science.nasa.gov/biological-physical/investigations/veg-05-rjtim/): tomates-anões, luz, fertilizantes, segurança alimentar e experiência da tripulação.
 - [NASA — Space Crops](https://science.nasa.gov/biological-physical/space-crops/): desafios da produção espacial.
 
-Sem extrapolação de rendimentos, necessidades ou tempos de cultivo da ISS para Marte. Percentuais são estados da interface, sem unidade física ou previsão agronômica. Não indicam sobrevivência ou saúde da planta. Cultivo humano não é evidência de vida marciana nativa.
+Sem extrapolação de rendimentos, necessidades ou tempos de cultivo da ISS para Marte. Os percentuais ilustrativos da fase 1 foram removidos na comparação da fase 2; não há previsão agronômica ou avaliação de saúde da planta. Cultivo humano não é evidência de vida marciana nativa.

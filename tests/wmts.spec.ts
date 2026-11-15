@@ -7,10 +7,12 @@ const xml = readFileSync(
   resolve("tests/fixtures/ctx-capabilities.xml"),
   "utf8",
 );
+const hiriseXml = readFileSync(resolve("tests/fixtures/hirise-capabilities.xml"), "utf8");
 afterEach(() => vi.unstubAllGlobals());
 describe("WMTS availability gate", () => {
-  it("accepts the recorded CTX metadata and rejects a changed grid or Earth CRS", () => {
+  it("accepts both controlled products and rejects a changed grid or Earth CRS", () => {
     expect(() => validateWmts(xml, nasaLayers[0])).not.toThrow();
+    expect(() => validateWmts(hiriseXml, nasaLayers[1])).not.toThrow();
     expect(() =>
       validateWmts(
         xml.replace("<TileWidth>256</TileWidth>", "<TileWidth>512</TileWidth>"),

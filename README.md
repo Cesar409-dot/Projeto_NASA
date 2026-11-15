@@ -4,7 +4,7 @@ Atlas educativo para o NASA Space Apps Challenge: exploração de Marte, fatores
 
 ## Executar
 
-Requer Node.js >= 20.9 (utilizado: 22.20.0) e npm (10.9.3).
+Use Node.js 22 LTS a partir de 22.12 (utilizado: 22.20.0) e npm (10.9.3). O ambiente de testes também suporta as versões indicadas pelo Vitest instalado.
 
 ```powershell
 npm.cmd ci
@@ -16,6 +16,7 @@ Abra http://localhost:3000. Em outros sistemas, use `npm`.
 ```powershell
 npm.cmd run lint
 npm.cmd run typecheck
+npm.cmd test
 npm.cmd run build
 npm.cmd start
 ```
@@ -25,18 +26,21 @@ Não requer conta, chave, banco de dados, arquivo `.env` ou recurso pago.
 ## Páginas e interações
 
 - `/`: apresentação, ilustração artística de Marte e acesso às três frentes.
-- `/mars-maps`: Leaflet apenas no cliente, zoom e arraste, seleção de pontos, controle de camadas e sequência de exploração com inclusão e remoção de pontos.
-- `/mind-space`: check-in demonstrativo, reflexão e cronômetro de pausa. Nenhuma resposta é persistida ou transmitida.
-- `/mars-greenhouse`: seleção de alface, mizuna e tomate-anão; controles de luz visual e reserva ilustrativa de água.
+- `/mars-maps`: camadas NASA controladas CTX e HiRISE verificadas antes de habilitar, carregamento e erro com fallback local, três centros científicos selecionáveis, origem/destino, arco e distância geométrica marciana, inversão/limpeza e painel de missão integrado.
+- `/mind-space`: check-in e cronômetro preservados; três cenários interativos sobre isolamento, comunicação e convivência sob pressão. Nenhuma resposta é persistida ou transmitida.
+- `/mars-greenhouse`: seleção e comparação qualitativa de alface, batata e rabanete; água, luz, nutrientes, ambiente e limitações, com fontes e estrutura para revisão de Química.
 - Página 404 com retorno ao início.
 
 ## Organização
 
 ```text
 src/app/           Rotas App Router, metadados e estilos globais
-src/components/    Navegação, interfaces interativas e CSS Modules
-src/data/          Conteúdo e posições editoriais demonstrativas
+src/components/    Interfaces e CSS Modules; map/ separa canvas, camadas e painéis
+src/data/          Camadas, pontos, cenários e culturas com fontes
+src/lib/mars/      Coordenadas, CRS explícito, distância, rota e verificação WMTS
 public/images/     Imagem orbital local com atribuição
+tests/             Geometria, controles em DOM simulado, CRS e falhas WMTS
+scripts/           Verificação HTTP e estudo anterior da grade Leaflet
 docs/              Fontes, limites e roteiro de verificação
 ```
 
@@ -48,18 +52,24 @@ Atlas de missão com fundo grafite, laranja para exploração, azul para fatores
 
 ## Integridade científica
 
-A imagem de Jezero é real, mas as anotações são editoriais e **não georreferenciadas**. O mapa usa `CRS.Simple` com coordenadas de imagem. Coordenadas regionais aproximadas aparecem separadamente com referência. Nenhuma elevação, distância, duração de caminhada, risco ou produtividade é inventada. A sequência é uma demonstração de interface, não uma rota navegável.
+O modo orbital usa uma grade angular explicitamente marciana, sem alias WGS84/EPSG:4326 e sem medidas terrestres. Os centros de Belva, Neretva Vallis e Jezero vêm do catálogo USGS/IAU, em latitude planetocêntrica e longitude positiva para leste, rede MDIM 2.1. São centros aproximados publicados a 0,01°, não locais exatos de coleta ou acesso.
 
-Não há WMTS ativo nesta entrega. A documentação oficial foi pesquisada; a projeção e a matriz planetárias precisam ser respeitadas antes da integração. Veja [fontes e plano científico](docs/SCIENCE.md).
+Marswalk estima o arco de grande círculo em uma esfera de Marte de raio 3.396.190 m. O resultado é arredondado ao quilômetro e não inclui relevo, risco ou viabilidade de caminhada. O fallback usa imagem oficial com posições editoriais: sua linha é apenas esquemática; a distância do painel usa as coordenadas do catálogo, nunca pixels.
+
+O identificador de CRS anunciado pelo WMTS é ambíguo. A grade implementada corresponde às matrizes publicadas e passou em testes numéricos, mas o alinhamento absoluto entre MDIM 2.1 e os produtos orbitais controlados a MOLA não foi validado para precisão operacional. As limitações aparecem na interface. Veja [metodologia e entrega da fase 2](docs/PHASE_2.md), [fontes](docs/SCIENCE.md) e [créditos](docs/MAP_ATTRIBUTION.md).
 
 Mind Space é educativo, sem avaliação clínica. Resultados de cultivo na ISS não validam agricultura em Marte. Os controles da estufa não são modelos físicos.
 
 ## Próximas prioridades
 
-1. Validar georreferenciamento de Jezero e revisar conteúdo com as pessoas de Química e Design.
-2. Integrar WMTS com CRS e matriz corretos, tratamento de falha e metadados por camada.
-3. Adicionar conjuntos reais com missão, resolução, cobertura e incerteza documentados.
-4. Calcular trajetos somente após validar topografia, distância planetária e limites do modelo.
-5. Ampliar avaliação de acessibilidade e dispositivos reais.
+1. Testar visualmente a integração orbital e a responsividade em navegador; validar alinhamento por pontos de controle independentes.
+2. Esclarecer o CRS anunciado pelo serviço com os produtores e validar transformações entre redes de controle.
+3. Revisar conteúdo e cultivares com as pessoas de Química e Design, incluindo unidades e protocolos antes de adicionar números.
+4. Incorporar topografia apenas com resolução, datum vertical e limites do modelo documentados.
+5. Ampliar a avaliação de acessibilidade e dispositivos reais.
+
+## Recursos 404 e avisos de desenvolvimento
+
+Não há preload manual de CSS. Foram verificados os assets referenciados nas quatro rotas, tanto no servidor de desenvolvimento quanto no de produção, sem 404. Um ícone SVG foi incluído pela convenção do Next.js. Após atualizações ou troca entre servidores, uma aba antiga pode precisar de recarga completa; não hardcode URLs de chunks `/_next/`. O aviso específico de preload no console do Chrome ainda requer confirmação visual, pois o controle do navegador estava indisponível.
 
 Consulte o [roteiro de verificação](docs/VERIFICATION.md). A aplicação não substitui ferramentas científicas ou planejamento operacional.

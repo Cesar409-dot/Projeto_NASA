@@ -2,6 +2,8 @@
 
 Verificação em 14/11/2026. Distinguir aquisição das imagens, processamento dos mosaicos e distribuição dos tiles. Creditar apenas o servidor Mars Trek não identifica todos os produtores científicos.
 
+Atualização da fase 2: os dois produtos controlados usam créditos por camada no controle do mapa e no rodapé contextual, com link para os respectivos DOIs. PIA19303 é o fallback local. O CTX preliminar não foi habilitado; sua pendência de atribuição permanece documentada.
+
 ## Imagem atualmente exibida
 
 Produto: **PIA19303 — A Possible Landing Site for the 2020 Mission: Jezero Crater**. Missão MRO, instrumento HiRISE, publicado em 04/03/2015.
