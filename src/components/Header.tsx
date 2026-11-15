@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { Orbit, ArrowUpRight } from "lucide-react";
 export function Header() {
   const path = usePathname();
-  if (path.startsWith("/mars-maps")) return null;
+  const isMarsMapsSection = path.startsWith("/mars-maps");
   return (
     <header className="header">
       <Link
@@ -26,7 +26,7 @@ export function Header() {
           <Link
             key={url}
             href={url}
-            aria-current={path === url ? "page" : undefined}
+            aria-current={path === url || (url === "/mars-maps" && isMarsMapsSection) ? "page" : undefined}
           >
             {name}
           </Link>

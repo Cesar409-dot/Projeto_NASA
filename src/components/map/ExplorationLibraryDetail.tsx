@@ -2,7 +2,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, MapPinned } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRef } from "react";
 import { sciencePoints } from "@/data/science-points";
 import { nasaLayers } from "@/data/map-layers";
@@ -10,7 +10,6 @@ import { distanceLabel, mapCoordinateLabel } from "@/lib/mars/exploration";
 import type { ViewMemory } from "@/lib/mars/map-view";
 import { useExplorationLibrary } from "./useExplorationLibrary";
 import { useExplorationRecords } from "./useExplorationRecords";
-import { MarsMapsNavigation } from "./MarsMapsNavigation";
 import u from "../ui.module.css";
 import s from "../map.module.css";
 
@@ -28,7 +27,6 @@ export function ExplorationLibraryDetail() {
   const selected = sciencePoints.find((point) => point.id === item.regionId) ?? sciencePoints[0];
   const associatedMissions = records.missions.filter((mission) => item.missionIds.includes(mission.id));
   return <main id="main" className={`${u.page} ${s.explorer} ${s.marsMapsApp} ${s.libraryDetail}`}>
-    <header className={s.marsMapsHeader}><Link className={s.marsMapsBrand} href="/mars-maps/library"><span className={s.brandPlanet}><MapPinned size={21} /></span><strong>Mars <i>Maps</i></strong></Link><p>Detalhes da exploração salva</p><div className={s.headerTools}><MarsMapsNavigation /><Link className={s.libraryHeaderLink} href={`/mars-maps?open=${encodeURIComponent(item.id)}`}>Abrir no planejamento</Link></div></header>
     <Link className={s.libraryBack} href="/mars-maps/library"><ArrowLeft size={15} /> Biblioteca de Explorações</Link>
     <section className={s.libraryDetailIntro}><div><span className={s.libraryStatus}>{item.status}</span><h1>{item.name}</h1><p>{item.regionName} · {item.routeMode === "terrain" ? "Rota pelo terreno" : "Rota direta"}</p></div><span className={u.badge}>{distanceLabel(item.route)}</span></section>
     <section className={s.libraryDetailGrid}>

@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useReducer, useState, useCallback, useRef, useEffect } from "react";
-import { ArrowRight, Check, Circle, Orbit } from "lucide-react";
+import { ArrowRight, Check, Circle } from "lucide-react";
 import type { ViewMemory } from "@/lib/mars/map-view";
 import { Crosshair } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +27,6 @@ import { PointDetails } from "./PointDetails";
 import { MissionSummary } from "./MissionSummary";
 import { useLayerHealth } from "./useLayerHealth";
 import { GuideTour } from "./GuideTour";
-import { MarsMapsNavigation } from "./MarsMapsNavigation";
 import { ExplorationReview } from "./ExplorationReview";
 import { useExplorationLibrary } from "./useExplorationLibrary";
 import type { LibraryExploration } from "@/lib/mars/exploration-library";
@@ -314,18 +313,10 @@ export function ScientificExplorer() {
   );
   return (
     <main id="main" className={`${u.page} ${s.explorer} ${s.marsMapsApp}`}>
-      <header className={s.marsMapsHeader}>
-        <a className={s.marsMapsBrand} href="#main" aria-label="Mars Maps início">
-          <span className={s.brandPlanet}><Orbit size={22} /></span>
-          <strong>Mars <i>Maps</i></strong>
-        </a>
-        <p>Planeje e explore a superfície de Marte</p>
-        <div className={s.headerTools}>
-          <MarsMapsNavigation />
-          <Link className={s.libraryHeaderLink} href="/mars-maps/library">Biblioteca de Explorações</Link>
-          <GuideTour onStart={startTutorial} onPrepareStep={prepareTourStep} />
-        </div>
-      </header>
+      <div className={s.mapHeaderActions}>
+        <Link className={s.libraryHeaderLink} href="/mars-maps/library">Biblioteca de Explorações</Link>
+        <GuideTour onStart={startTutorial} onPrepareStep={prepareTourStep} />
+      </div>
       <nav className={s.workflowStepper} aria-label="Etapas da exploração">
         {([
           { id: "planning", title: "Planejamento", subtitle: "Planeje sua rota" },

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Search, Trash2, Pencil, MapPinned } from "lucide-react";
 import { distanceLabel } from "@/lib/mars/exploration";
 import { useExplorationLibrary } from "./useExplorationLibrary";
-import { MarsMapsNavigation } from "./MarsMapsNavigation";
 import u from "../ui.module.css";
 import s from "../map.module.css";
 
@@ -28,11 +27,6 @@ export function ExplorationLibrary() {
     if (window.confirm(`Excluir “${name}” da biblioteca? Os marcadores e missões independentes serão mantidos.`)) save(items.filter((item) => item.id !== id));
   }
   return <main id="main" className={`${u.page} ${s.explorer} ${s.marsMapsApp} ${s.libraryPage}`}>
-    <header className={s.marsMapsHeader}>
-      <Link className={s.marsMapsBrand} href="/mars-maps"><span className={s.brandPlanet}><MapPinned size={21} /></span><strong>Mars <i>Maps</i></strong></Link>
-      <p>Biblioteca pessoal de percursos analisados</p>
-      <div className={s.headerTools}><MarsMapsNavigation /><Link className={s.libraryHeaderLink} href="/mars-maps">Planejar exploração</Link></div>
-    </header>
     <section className={s.libraryIntro}>
       <div><Link className={s.libraryBack} href="/mars-maps"><ArrowLeft size={15} /> Voltar ao mapa</Link><h1>Biblioteca de Explorações</h1><p>Consulte, compare e abra novamente as rotas que você salvou.</p></div>
       <span className={u.badge}>{ready ? items.length : "…"} EXPLORAÇÕES</span>
