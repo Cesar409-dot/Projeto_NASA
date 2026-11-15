@@ -20,23 +20,42 @@ import { sciencePoints, type SciencePoint } from "@/data/science-points";
 import { officialImage, tileTemplate, type NasaLayer } from "@/data/map-layers";
 import { marsLatLng } from "@/lib/mars/coordinates";
 import { marsAngularCRS } from "@/lib/mars/crs";
-import { frameCoverage, type ViewMemory } from "@/lib/mars/map-view";
+import { coverageMinZoom, frameCoverage, type ViewMemory } from "@/lib/mars/map-view";
 import s from "../map.module.css";
 import type { TerrainPlan } from "@/lib/mars/terrain-routing";
 import type { RouteMode } from "./useTerrainRoute";
 import { MapPointMarker, PointTooltipControl } from "./MapPointMarker";
 const imageBounds = officialImage.bounds;
+function fitInitialPoints(map: import("leaflet").Map, layer?: NasaLayer) {
+  const bounds = layer?.bounds ?? imageBounds;
+  const minZoom = layer ? 0 : -8;
+  const maxZoom = layer?.maxNativeZoom ?? officialImage.maxZoom;
+  map.setMinZoom(coverageMinZoom(map, bounds, minZoom, maxZoom));
+  map.setMaxZoom(maxZoom);
+  map.setMaxBounds(bounds);
+  const positions = sciencePoints.map((point) =>
+    layer ? marsLatLng(point.coordinate) : point.imagePosition,
+  );
+  map.fitBounds(positions, {
+    padding: layer ? [92, 92] : [48, 48],
+    maxZoom: layer ? Math.min(maxZoom, 6.5) : maxZoom,
+    animate: false,
+  });
+  map.panInsideBounds(bounds, { animate: false });
+}
 
 function ViewControl({
   selected,
   layer,
   viewMemory,
   viewKey,
+  recordsReady,
 }: {
   viewMemory?: ViewMemory;
   viewKey: string;
   selected: SciencePoint;
   layer?: NasaLayer;
+  recordsReady: boolean;
 }) {
   const map = useMap();
   const control = useRef<HTMLButtonElement>(null);
@@ -49,24 +68,32 @@ function ViewControl({
     };
   }, []);
   const previousSelected = useRef(selected.id);
+  const autoFramed = useRef(false);
   const request = useRef(viewKey);
   useEffect(() => {
     request.current = viewKey;
   }, [viewKey]);
   useEffect(() => {
+    if (!recordsReady) return;
+    const shouldAutoFrame = !autoFramed.current;
+    if (shouldAutoFrame) autoFramed.current = true;
     const bounds = layer?.bounds ?? imageBounds;
     const nativeMinZoom = layer ? 0 : -8;
     const maxZoom = layer?.maxNativeZoom ?? officialImage.maxZoom;
     const base = layer ? "mola" : "image";
     const saved = viewMemory?.current[base];
-    frameCoverage(map, bounds, nativeMinZoom, maxZoom, true);
-    if (saved?.request === request.current) {
+    if (shouldAutoFrame && saved?.request === request.current) {
+      frameCoverage(map, bounds, nativeMinZoom, maxZoom, true);
       map.setView(
         saved.center,
         Math.max(map.getMinZoom(), Math.min(maxZoom, saved.zoom)),
         { animate: false },
       );
       map.panInsideBounds(bounds, { animate: false });
+    } else if (shouldAutoFrame) {
+      fitInitialPoints(map, layer);
+    } else {
+      frameCoverage(map, bounds, nativeMinZoom, maxZoom);
     }
     const remember = () => {
       if (!viewMemory) return;
@@ -87,7 +114,7 @@ function ViewControl({
       observer.disconnect();
       map.off("moveend", remember);
     };
-  }, [map, layer, viewMemory]);
+  }, [map, layer, viewMemory, recordsReady]);
   useEffect(() => {
     const changedPoint = previousSelected.current !== selected.id;
     previousSelected.current = selected.id;
@@ -106,13 +133,7 @@ function ViewControl({
       className={s.centerMap}
       onClick={(event) => {
         event.stopPropagation();
-        frameCoverage(
-          map,
-          layer?.bounds ?? imageBounds,
-          layer ? 0 : -8,
-          layer?.maxNativeZoom ?? officialImage.maxZoom,
-          true,
-        );
+        fitInitialPoints(map, layer);
       }}
     >
       Recentralizar mapa
@@ -167,11 +188,6 @@ function MapInteraction({
   });
   const lastRoute = useRef<unknown[] | undefined>(undefined);
   const lastFocus = useRef<unknown[] | undefined>(undefined);
-  const restored = useRef(false);
-  useEffect(() => {
-    restored.current =
-      viewMemory?.current[layer ? "mola" : "image"]?.request === viewKey;
-  }, [map, layer, viewMemory, viewKey]);
   useEffect(() => {
     map.getContainer().style.cursor = adding ? "crosshair" : "";
     return () => {
@@ -192,7 +208,7 @@ function MapInteraction({
     lastRoute.current = inputs;
     if (
       previous?.every((value, i) => value === inputs[i]) ||
-      (!previous && restored.current)
+      (!previous && !!viewMemory?.current[layer ? "mola" : "image"])
     )
       return;
     if (routeMode === "terrain" && !terrainPlan) return;
@@ -213,14 +229,14 @@ function MapInteraction({
       map.fitBounds([origin.imagePosition, destination.imagePosition], {
         padding: [50, 50],
       });
-  }, [map, layer, origin, destination, routeFocus, terrainPlan, routeMode]);
+  }, [map, layer, origin, destination, routeFocus, terrainPlan, routeMode, viewMemory, viewKey]);
   useEffect(() => {
     const inputs = [map, layer, focusCoordinate];
     const previous = lastFocus.current;
     lastFocus.current = inputs;
     if (
       previous?.every((value, i) => value === inputs[i]) ||
-      (!previous && restored.current)
+      (!previous && !!viewMemory?.current[layer ? "mola" : "image"])
     )
       return;
     if (!layer || !focusCoordinate) return;
@@ -237,7 +253,7 @@ function MapInteraction({
       Math.min(layer.maxNativeZoom, Math.max(map.getMinZoom(), map.getZoom())),
       { animate: false },
     );
-  }, [map, layer, focusCoordinate]);
+  }, [map, layer, focusCoordinate, viewMemory, viewKey]);
   return null;
 }
 
@@ -260,8 +276,10 @@ export default function LeafletCanvas({
   routeMode = "direct",
   terrainPlan,
   viewMemory,
+  recordsReady = true,
 }: {
   viewMemory?: ViewMemory;
+  recordsReady?: boolean;
   routeMode?: RouteMode;
   terrainPlan?: TerrainPlan;
   focusCoordinate?: MarsCoordinate;
@@ -370,7 +388,7 @@ export default function LeafletCanvas({
     return () => clearTimeout(timer);
   }, [loading, layer, onLayerError]);
   return (
-    <div className={s.canvasWrap}>
+    <div className={s.canvasWrap} data-guide="map">
       {loading && (
         <span className={s.tileStatus} role="status">
           Carregando base cartográfica…
@@ -411,7 +429,8 @@ export default function LeafletCanvas({
       <MapContainer
         className={s.map}
         crs={layer ? marsAngularCRS : CRS.Simple}
-        bounds={layer?.bounds ?? imageBounds}
+        center={layer ? [18.48, 77.445] : [500, 800]}
+        zoom={layer ? 6.5 : 0}
         minZoom={layer ? 0 : -8}
         maxBounds={layer?.bounds ?? imageBounds}
         maxBoundsViscosity={1}
@@ -425,6 +444,7 @@ export default function LeafletCanvas({
         <ViewControl
           selected={selected}
           layer={layer}
+          recordsReady={recordsReady}
           viewMemory={viewMemory}
           viewKey={viewKey}
         />

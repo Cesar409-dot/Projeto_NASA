@@ -414,6 +414,14 @@ describe("Controles nativos do mapa Leaflet", () => {
         base === "mola" ? nasaLayers[0].bounds : officialImage.bounds,
       );
       const max = base === "mola" ? 7 : officialImage.maxZoom;
+      const initialZoom = threeD ? 6.5 : 7;
+      if (base === "mola") {
+        expect(map.getZoom()).toBe(initialZoom);
+        expect(map.getCenter().lat).toBeCloseTo(18.48);
+        expect(map.getCenter().lng).toBeCloseTo(77.445);
+        for (const point of sciencePoints)
+          expect(map.getBounds().contains([point.coordinate.latitude, point.coordinate.longitude])).toBe(true);
+      }
       for (const size of [
         new Point(960, 540),
         new Point(350, 480),
@@ -442,9 +450,14 @@ describe("Controles nativos do mapa Leaflet", () => {
         fireEvent.click(
           screen.getByRole("button", { name: "Recentralizar mapa" }),
         );
-        expect(map.getZoom()).toBe(map.getMinZoom());
-        expect(map.getCenter().lat).toBeCloseTo(bounds.getCenter().lat, 2);
-        expect(map.getCenter().lng).toBeCloseTo(bounds.getCenter().lng, 2);
+        if (base === "mola") {
+          expect(map.getZoom()).toBe(initialZoom);
+          expect(map.getCenter().lat).toBeCloseTo(18.48);
+          expect(map.getCenter().lng).toBeCloseTo(77.445);
+        } else {
+          for (const point of sciencePoints)
+            expect(map.getBounds().contains(point.imagePosition)).toBe(true);
+        }
       }
       if (base === "image") {
         expect(1600 * 2 ** max).toBeLessThanOrEqual(officialImage.width);

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Orbit, ArrowUpRight } from "lucide-react";
 export function Header() {
   const path = usePathname();
+  if (path.startsWith("/mars-maps")) return null;
   return (
     <header className="header">
       <Link

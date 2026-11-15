@@ -1,6 +1,43 @@
 .explorer {
   padding-top: 32px;
 }
+.marsMapsApp {
+  max-width: 1480px;
+  padding: 18px clamp(16px, 3vw, 44px) 56px;
+}
+.marsMapsHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 64px;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  background: radial-gradient(ellipse at 82% 110%, #8b422e5c, transparent 38%), linear-gradient(110deg, #111415, #17191a 70%, #2b1c18);
+}
+.marsMapsHeader > p { font-size: 12px; }
+.marsMapsHeader .guideActions { margin: 0; }
+.marsMapsHeader .guideActions button { color: var(--text); font-size: 11px; padding: 8px 12px; }
+.headerTools { display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-width: 0; }
+.marsMapsNav { display: flex; align-items: center; justify-content: flex-end; gap: 5px; flex-wrap: wrap; }
+.marsMapsNav a { padding: 7px 9px; border: 1px solid transparent; color: #d5d9d7; font-size: 10px; white-space: nowrap; }
+.marsMapsNav a:hover, .marsMapsNav a:focus-visible { border-color: #694833; color: var(--accent); }
+.marsMapsBrand { display: flex; align-items: center; gap: 11px; color: var(--text); text-decoration: none; }
+.marsMapsBrand strong { font-size: 19px; letter-spacing: -.02em; }
+.marsMapsBrand i { color: var(--accent); font-style: normal; }
+.brandPlanet { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--accent); border-radius: 50%; color: var(--accent); background: radial-gradient(circle at 35% 35%, #f5a371, #9f4829 55%, #301915); box-shadow: 0 0 16px #f47b5030; }
+.workflowStepper { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 650px; margin: 16px auto 20px; }
+.workflowStepper button { display: flex; align-items: center; gap: 9px; padding: 8px 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--muted); text-align: left; }
+.workflowStepper button:disabled { opacity: .5; cursor: not-allowed; }
+.workflowStepper button:not(:disabled) { cursor: pointer; }
+.workflowStepper strong, .workflowStepper small { display: block; }
+.workflowStepper strong { font-size: 11px; }
+.workflowStepper small { margin-top: 2px; font-size: 9px; }
+.workflowNumber { width: 21px; height: 21px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 10px; }
+.workflowActive { color: var(--text) !important; border-bottom: 2px solid var(--accent) !important; }
+.workflowActive .workflowNumber, .workflowComplete .workflowNumber { color: #121515; border-color: var(--accent); background: var(--accent); }
+.workflowComplete { color: #c6d9c5 !important; }
+.libraryHeaderLink { justify-self: end; padding: 9px 12px; border: 1px solid #8e614a; color: var(--accent); font-size: 11px; white-space: nowrap; }
 .explorer :is(button, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
@@ -15,13 +52,159 @@
   font-size: 13px;
   color: var(--muted);
 }
+.guideActions {
+  display: flex;
+  justify-content: flex-end;
+  margin: -12px 0 12px;
+}
+.tourSpotlight {
+  position: fixed;
+  z-index: 1400;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 72%), 0 0 24px rgb(255 125 77 / 32%);
+  pointer-events: none;
+  transition: top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease;
+}
+.tourCard {
+  position: fixed;
+  z-index: 1401;
+  box-sizing: border-box;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 18px;
+  border: 1px solid #a86748;
+  border-top: 3px solid var(--accent);
+  background: #15191a;
+  color: var(--text);
+  box-shadow: 0 18px 60px #000b;
+}
+.tourCardHead { display: flex; align-items: center; justify-content: space-between; color: var(--accent); font: 10px monospace; letter-spacing: .08em; }
+.tourClose { border: 0; background: transparent; color: var(--muted); font-size: 23px; line-height: 1; cursor: pointer; }
+.tourCard h2 { margin: 10px 0 7px; font-size: 20px; }
+.tourCard p { margin: 0; color: #c3c8c5; font-size: 12px; line-height: 1.65; }
+.tourProgress { display: flex; gap: 5px; margin: 15px 0; }
+.tourProgressPending, .tourProgressDone { height: 3px; flex: 1; background: #394042; }
+.tourProgressDone { background: var(--accent); }
+.tourActions { display: flex; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
+.tourActions button { padding: 8px 10px; font-size: 11px; }
 .workspace {
-  display: grid;
-  grid-template-columns: 285px minmax(0, 1fr);
+  display: block;
   border: 1px solid var(--line);
   background: var(--panel);
   align-items: start;
 }
+.planningBottom { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, .8fr); gap: 14px; margin-top: 14px; align-items: start; }
+.planningControls { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr); gap: 14px; margin-top: 16px; align-items: start; }
+.routePlannerCard, .planningTools { min-width: 0; padding: 20px; border: 1px solid var(--line); background: var(--panel); }
+.planner { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+.planner > h3, .planner > p, .planner > .routeFields, .planner > .routeStatus, .planner > .actions { grid-column: 1 / -1; }
+.planner > .selectLabel { grid-column: 1 / -1; }
+.routeFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.routeFields .selectLabel { min-width: 0; }
+.planningTools h2 { margin-bottom: 14px; font-size: 18px; }
+.planningToolActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.planningToolActions button { flex: 1 1 145px; padding: 10px; }
+.planningTools > .layerSet { margin: 15px 0 0; }
+.planningTools .layerDetails { margin-top: 10px; }
+.planningBottom > .mission { margin-top: 0; }
+.missionCompact { padding: 18px; }
+.missionCompact h2 { font-size: 18px; }
+.missionCompact .missionList { max-height: 240px; overflow-y: auto; }
+.missionSelect { display: grid; gap: 6px; margin: 12px 0; color: var(--muted); font-size: 11px; }
+.missionSelect select { padding: 9px 10px; }
+.workflowActions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 16px 0 24px; padding: 14px 18px; border: 1px solid var(--line); background: #121617; }
+.workflowActions .small { margin: 0; }
+.workflowActions button { padding: 11px 16px; white-space: nowrap; }
+.missionManagement { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.missionManagement > summary { color: var(--accent); cursor: pointer; font-size: 11px; }
+.missionManagement > .mission { margin: 12px 0 0; }
+.journey { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; min-height: 560px; }
+.journeyRail, .reviewCard { border: 1px solid var(--line); background: linear-gradient(145deg, #171b1c, #121516); }
+.journeyRail { padding: 18px; }
+.journeyRail > button { display: flex; align-items: center; gap: 7px; width: 100%; margin-bottom: 24px; text-align: left; }
+.journeyRail h2 { margin-bottom: 20px; font-size: 21px; }
+.journeyProgress { display: grid; gap: 22px; padding: 0; margin: 0; list-style: none; }
+.journeyProgress li { display: grid; grid-template-columns: 23px 1fr; gap: 9px; align-items: start; font-size: 11px; }
+.journeyProgress li > svg { color: var(--muted); }
+.journeyProgress small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.progressDone > svg { color: #81d68b !important; }
+.progressCurrent > svg { color: var(--accent) !important; }
+.journeyProgress .progressPending { color: var(--muted); }
+.reviewMain, .analysisMain { min-width: 0; }
+.reviewGrid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(260px, .75fr); gap: 14px; }
+.reviewCard { min-width: 0; padding: 20px; }
+.reviewCard h2 { font-size: 21px; }
+.reviewCard h3 { margin: 13px 0 8px; font-size: 17px; }
+.reviewCard > p { margin-top: 10px; font-size: 12px; }
+.reviewCardTitle { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+.reviewCardTitle > svg { color: var(--accent); }
+.reviewCardTitle h2 { font-size: 19px; }
+.reviewCardTitle p { margin-top: 3px; font-size: 10px; }
+.statusPill { margin-left: auto; padding: 4px 8px; border: 1px solid #3e7953; border-radius: 20px; background: #1b4128; color: #a2e5ad; font-size: 9px; }
+.distanceHero { display: block; margin-top: 18px; font: 600 clamp(30px, 4vw, 44px)/1 "Barlow Condensed", sans-serif; }
+.reviewMetrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 18px 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.reviewMetrics dt, .reportList dt { color: var(--muted); font-size: 10px; }
+.reviewMetrics dd, .reportList dd { margin: 5px 0 0; font-size: 12px; }
+.profileUnavailable { margin-top: 14px; padding: 15px; border: 1px dashed #424949; background: #101314; }
+.librarySaveForm { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; }
+.librarySaveForm label { display: grid; gap: 6px; flex: 1 1 220px; color: var(--muted); font-size: 11px; }
+.profileUnavailable strong { font-size: 12px; }
+.profileUnavailable p { margin-top: 6px; font-size: 11px; line-height: 1.55; }
+.regionImage { display: block; width: 100%; height: 150px; margin-top: 12px; object-fit: cover; border: 1px solid var(--line); }
+.reviewActions { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.reviewActions button { display: inline-flex; align-items: center; gap: 7px; }
+.analysisTabs { display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.analysisTabs button { padding: 9px 15px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 11px; }
+.analysisTabs .analysisTabActive { border-color: var(--accent); background: var(--accent); color: #171717; }
+.analysisGrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.reportList { display: grid; gap: 0; margin: 0; }
+.reportList > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #272d2e; }
+.reportList dd { margin: 0; text-align: right; }
+.reportMapCard { grid-column: 1 / -1; }
+.reportMapCard :global(.leaflet-container) { height: 340px; }
+.completionCard { border-color: #39744b; }
+.completionCard .reviewCardTitle > svg { color: #79d28c; }
+.pendingCard .reviewCardTitle > svg { color: var(--accent); }
+.analysisList { display: grid; gap: 9px; margin-top: 16px; }
+.analysisListItem { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px; border: 1px solid var(--line); background: #121617; }
+.analysisListItem strong, .analysisListItem span { display: block; }
+.analysisListItem strong { font-size: 12px; }
+.analysisListItem span, .analysisListItem code { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.analysisListItem code { text-align: right; }
+.workflowBlocked { padding: 28px; border: 1px solid var(--line); background: var(--panel); }
+.libraryPage { min-height: 100vh; }
+.libraryIntro, .libraryDetailIntro { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin: 30px 0 18px; }
+.libraryIntro h1, .libraryDetailIntro h1 { margin: 10px 0 5px; font-size: clamp(27px, 4vw, 38px); }
+.libraryIntro p, .libraryDetailIntro p { color: var(--muted); font-size: 12px; }
+.libraryBack { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
+.libraryStorageNote { margin: 0 0 18px; padding: 11px 14px; border-left: 2px solid var(--accent); background: #231e19; color: #c6bcb4; font-size: 11px; }
+.libraryFilters { display: grid; grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(140px, .7fr)); gap: 12px; margin: 18px 0; padding: 15px; border: 1px solid var(--line); background: var(--panel); }
+.libraryFilters > label { display: grid; gap: 5px; color: var(--muted); font-size: 10px; }
+.librarySearch { display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line); color: var(--muted); }
+.librarySearch input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; }
+.libraryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.libraryCard { min-width: 0; padding: 18px; border: 1px solid var(--line); background: linear-gradient(145deg, #171b1c, #121516); }
+.libraryCard h2 { margin: 14px 0 4px; font-size: 20px; }
+.libraryCardHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--muted); font-size: 10px; }
+.libraryStatus { display: inline-block; padding: 4px 8px; border: 1px solid #477950; border-radius: 20px; color: #a8e5b0; text-transform: capitalize; }
+.libraryMetrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 15px 0; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.libraryMetrics > div { min-width: 0; }
+.libraryMetrics dt { color: var(--muted); font-size: 9px; }
+.libraryMetrics dd { margin: 3px 0 0; font-size: 11px; overflow-wrap: anywhere; }
+.libraryCardActions { display: flex; flex-wrap: wrap; gap: 7px; }
+.libraryCardActions :is(a, button) { display: inline-flex; align-items: center; gap: 5px; padding: 8px 10px; font-size: 10px; }
+.libraryEmpty { display: grid; justify-items: center; gap: 8px; padding: 60px 18px; border: 1px dashed var(--line); text-align: center; }
+.libraryEmpty > svg { color: var(--accent); }
+.libraryEmpty h2 { font-size: 20px; }
+.libraryEmpty p { max-width: 540px; color: var(--muted); font-size: 12px; }
+.libraryDetailGrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 14px; }
+.libraryDetailGrid > .reviewCard { min-width: 0; }
+.libraryDetailMap { grid-row: span 2; }
+.libraryDetailMap :global(.leaflet-container) { height: 470px; }
+.libraryMissionList { display: grid; gap: 10px; padding: 0; list-style: none; }
+.libraryMissionList li { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--line); font-size: 11px; }
+.libraryMissionList span { color: var(--muted); }
 .sidebar {
   padding: 22px 18px;
   border-right: 1px solid var(--line);
@@ -83,6 +266,12 @@
   gap: 8px 20px;
   padding: 7px 18px;
 }
+.markerLegend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--muted); font-size: 10px; }
+.markerLegend > span { display: inline-flex; align-items: center; gap: 5px; }
+.markerLegend i { display: inline-block; width: 9px; height: 9px; border: 2px solid #f0eee7; border-radius: 50%; background: #f47b50; }
+.markerLegend .legendPersonal { border-color: #8ed9ff; background: #2685b4; }
+.markerLegend .legendOrigin { border-color: #a5ffe0; background: transparent; width: 12px; height: 12px; }
+.markerLegend .legendDestination { border-color: #8ed9ff; background: transparent; width: 12px; height: 12px; }
 .layer {
   display: flex;
   justify-content: space-between;
@@ -168,6 +357,7 @@
   gap: 9px;
   align-items: center;
 }
+.fieldHint { display: block; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .selectLabel select {
   font-size: 12px;
   padding: 11px 8px;
@@ -203,6 +393,8 @@
   font: 12px monospace;
   overflow-wrap: anywhere;
 }
+.progressComplete { color: #a5ffe0; }
+.progressPending { color: #efc2a6; }
 .canvasWrap {
   position: relative;
 }
@@ -261,6 +453,7 @@
 .expanded {
   grid-template-columns: minmax(0, 1fr);
 }
+.expanded .map { height: min(82vh, 980px); }
 .expanded .sidebar {
   display: none;
 }
@@ -495,6 +688,10 @@
   border-color: #ef9a78;
 }
 @media (max-width: 1000px) {
+  .planningBottom { grid-template-columns: minmax(0, 1fr) minmax(270px, .8fr); }
+  .planningControls { grid-template-columns: minmax(0, 1fr) minmax(250px, .75fr); }
+  .journey { grid-template-columns: 210px minmax(0, 1fr); }
+  .reviewGrid { grid-template-columns: minmax(0, 1fr); }
   .workspace {
     grid-template-columns: 255px minmax(0, 1fr);
   }
@@ -506,20 +703,37 @@
   }
 }
 @media (max-width: 760px) {
-  .workspace {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .mapColumn {
-    grid-row: 1;
-  }
-  .sidebar {
-    grid-row: 2;
-    border-right: 0;
-    border-top: 1px solid var(--line);
-  }
+  .marsMapsApp { padding: 12px 14px 36px; }
+  .marsMapsHeader { grid-template-columns: minmax(0, 1fr) auto; gap: 7px 12px; }
+  .marsMapsHeader > p { grid-column: 1; grid-row: 2; }
+  .marsMapsHeader > .headerTools { grid-column: 1 / -1; grid-row: 3; justify-content: space-between; flex-wrap: wrap; }
+  .marsMapsNav { justify-content: flex-start; }
+  .workflowStepper { margin: 12px 0 16px; }
+  .workflowStepper button { justify-content: center; padding: 8px 4px; }
+  .workflowStepper small { display: none; }
+  .planningBottom { grid-template-columns: minmax(0, 1fr); }
+  .planningControls { grid-template-columns: minmax(0, 1fr); }
+  .planner { grid-template-columns: minmax(0, 1fr); }
+  .planner > * { grid-column: 1 !important; }
+  .routeFields { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .journey { grid-template-columns: minmax(0, 1fr); }
+  .journeyProgress { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .journeyProgress li { font-size: 10px; }
+  .reviewGrid { grid-template-columns: minmax(0, 1fr); }
+  .reviewMetrics { grid-template-columns: minmax(0, 1fr); }
+  .analysisGrid { grid-template-columns: minmax(0, 1fr); }
+  .reportMapCard { grid-column: auto; }
+  .workflowActions { align-items: stretch; flex-direction: column; }
+  .workflowActions button { width: 100%; }
+  .workspace { display: block; }
   .recordsGrid {
     grid-template-columns: minmax(0, 1fr);
   }
+  .libraryFilters { grid-template-columns: minmax(0, 1fr); }
+  .libraryGrid { grid-template-columns: minmax(0, 1fr); }
+  .libraryDetailGrid { grid-template-columns: minmax(0, 1fr); }
+  .libraryDetailMap { grid-row: auto; }
+  .libraryIntro, .libraryDetailIntro { align-items: flex-start; flex-direction: column; }
   .scienceContent {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -538,11 +752,24 @@
   .loading {
     height: 480px;
   }
-  .expanded .sidebar {
-    display: none;
-  }
 }
 @media (max-width: 480px) {
+  .marsMapsBrand strong { font-size: 16px; }
+  .marsMapsHeader { padding: 9px 10px; }
+  .marsMapsHeader > p { font-size: 10px; }
+  .libraryHeaderLink { padding: 7px 9px; font-size: 9px; }
+  .marsMapsNav { gap: 2px; }
+  .marsMapsNav a { padding: 5px; font-size: 9px; }
+  .workflowNumber { width: 18px; height: 18px; }
+  .workflowStepper strong { font-size: 9px; }
+  .reviewCard { padding: 15px; }
+  .libraryCard { padding: 14px; }
+  .libraryCardActions > * { flex: 1 1 42%; justify-content: center; }
+  .reviewActions { flex-direction: column; }
+  .reviewActions button { justify-content: center; }
+  .analysisListItem { align-items: flex-start; flex-direction: column; }
+  .analysisListItem code { text-align: left; }
+  .tourCard { padding: 15px; }
   .coordinateFields {
     grid-template-columns: minmax(0, 1fr);
   }

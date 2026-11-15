@@ -150,6 +150,9 @@ export function MissionManager({
   onDelete,
   onSelect,
   error,
+  compact = false,
+  onClearSelection,
+  title = "Minhas missões",
 }: {
   missions: SavedMission[];
   error?: string;
@@ -159,12 +162,15 @@ export function MissionManager({
   onSave: (m: SavedMission) => boolean;
   onDelete: (id: string) => void;
   onSelect: (m: SavedMission) => void;
+  compact?: boolean;
+  onClearSelection?: () => void;
+  title?: string;
 }) {
   const [editing, setEditing] = useState<MissionDraft>();
   return (
-    <section className={s.mission} aria-labelledby="missions-title">
+    <section className={`${s.mission} ${compact ? s.missionCompact : ""}`} aria-labelledby="missions-title">
       <div className={u.row}>
-        <h2 id="missions-title">Minhas missões</h2>
+        <h2 id="missions-title">{title}</h2>
         <button
           className={u.choice}
           disabled={!ready}
@@ -182,10 +188,22 @@ export function MissionManager({
           Cadastrar missão
         </button>
       </div>
-      <p className={s.small}>
+      {missions.length > 0 && <label className={s.missionSelect}>
+        Missão selecionada
+        <select className={u.field} aria-label="Missão selecionada" value={activeId ?? ""} onChange={(event) => {
+          const mission = missions.find((item) => item.id === event.target.value);
+          if (mission) onSelect(mission);
+          else onClearSelection?.();
+        }}>
+          <option value="">Nenhuma missão selecionada</option>
+          {missions.map((mission) => <option key={mission.id} value={mission.id}>{mission.name}</option>)}
+        </select>
+      </label>}
+      {compact && activeId && <p className={s.small}>A missão selecionada carrega sua cópia salva da rota.</p>}
+      {!compact && <p className={s.small}>
         Registros salvos apenas neste navegador. Selecionar uma missão destaca a
         cópia da rota salva, mesmo após alterações nos marcadores.
-      </p>
+      </p>}
       {!missions.length && <p>Nenhuma missão cadastrada.</p>}
       <div className={s.missionList}>
         {missions.map((m) => (

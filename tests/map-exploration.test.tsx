@@ -98,6 +98,14 @@ function planRoute() {
     target: { value: "neretva" },
   });
 }
+function openMissionManager() {
+  const summary = screen.getByText("Gerenciar missões salvas");
+  const details = summary.closest("details");
+  if (details && !details.open) {
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
+  }
+}
 describe("Coordenadas manuais e retomada do rascunho", () => {
   it("alterna somente MOLA e Imagem oficial sem modificar registros antigos nem a rota", () => {
     const marker = {
@@ -271,6 +279,7 @@ describe("Mars Maps: exploração persistente", { timeout: 20000 }, () => {
   });
   it("validates routes, creates a mission in a modal, restores its snapshot and edits/deletes it", () => {
     const view = render(<ScientificExplorer />);
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission();
     expect(
@@ -285,6 +294,7 @@ describe("Mars Maps: exploração persistente", { timeout: 20000 }, () => {
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Fechar formulário" }));
     planRoute();
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission();
     fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
@@ -293,12 +303,14 @@ describe("Mars Maps: exploração persistente", { timeout: 20000 }, () => {
     expect(mission.route.origin.id).toBe("belva");
     expect(routeDistance(mission.route)).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Limpar rota" }));
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Coleta no delta" }));
     expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
       sciencePoints[0].name,
     );
     view.unmount();
     render(<ScientificExplorer />);
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Coleta no delta" }));
     fireEvent.click(screen.getByRole("button", { name: "Limpar rota" }));
     expect(screen.getByTestId("map").getAttribute("data-origin")).toBeNull();
@@ -329,12 +341,14 @@ describe("Mars Maps: exploração persistente", { timeout: 20000 }, () => {
     fireEvent.change(screen.getByLabelText("Destino"), {
       target: { value: "belva" },
     });
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission();
     fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Excluir marcador Amostra A" }),
     );
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Coleta no delta" }));
     expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
       "Amostra A",
@@ -357,6 +371,7 @@ describe("Mars Maps: exploração persistente", { timeout: 20000 }, () => {
   it("retains the form when storage is full", () => {
     render(<ScientificExplorer />);
     planRoute();
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission();
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
@@ -576,6 +591,7 @@ describe("Edição e exclusão de marcadores", { timeout: 20000 }, () => {
     );
     view.unmount();
     render(<ScientificExplorer />);
+    openMissionManager();
     expect(
       screen.getByRole("heading", { name: "Ponto revisado" }),
     ).toBeTruthy();
@@ -717,6 +733,7 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
     (field) => {
       render(<ScientificExplorer />);
       planRoute();
+      openMissionManager();
       fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
       fillMission();
       const input = screen.getByLabelText(field) as HTMLInputElement;
@@ -751,6 +768,7 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
   it("salva os campos preenchidos e a rota selecionada e apresenta a missão imediatamente", () => {
     const view = render(<ScientificExplorer />);
     planRoute();
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     const dialog = screen.getByRole("dialog");
     expect(dialog.getAttribute("aria-labelledby")).toBe("map-dialog-title");
@@ -780,7 +798,8 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
         destination: { id: "neretva", coordinate: sciencePoints[1].coordinate },
       },
     });
-    const list = screen.getByRole("region", { name: "Minhas missões" });
+    openMissionManager();
+    const list = screen.getByRole("region", { name: "Missões salvas" });
     expect(
       within(list).getByRole("button", { name: "Reconhecimento do delta" }),
     ).toBeTruthy();
@@ -799,6 +818,7 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
     render(<ScientificExplorer />);
     planRoute();
     const write = vi.spyOn(Storage.prototype, "setItem");
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission("Rascunho fechado");
     fireEvent.click(screen.getByRole("button", { name: "Fechar formulário" }));
@@ -814,6 +834,7 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(write).not.toHaveBeenCalled();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission("Missão sem descrição");
     fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
@@ -826,6 +847,7 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
     fireEvent.change(screen.getByLabelText("Origem"), {
       target: { value: "belva" },
     });
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission();
     const dialog = screen.getByRole("dialog");
@@ -846,6 +868,8 @@ describe("Cadastro de missões", { timeout: 20000 }, () => {
   it("permite repetir um cadastro que falhou sem duplicar nem sobrescrever missões existentes", () => {
     render(<ScientificExplorer />);
     planRoute();
+    openMissionManager();
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fillMission("Missão original");
     fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
@@ -944,6 +968,7 @@ describe(
       expect(
         screen.getAllByText(/^≈ /).map((element) => element.textContent),
       ).toEqual(distanceBefore);
+      openMissionManager();
       fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
       fillMission("Rota invertida");
       fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
@@ -956,6 +981,7 @@ describe(
     it("destaca a rota salva mesmo se oculta e remove o destaque ao planejar ou limpar, sem alterar a missão", () => {
       const { mission } = seedRouteMission();
       render(<ScientificExplorer />);
+      openMissionManager();
       fireEvent.click(screen.getByLabelText("Mostrar conexão"));
       expect(screen.getByTestId("map").getAttribute("data-route-visible")).toBe(
         "false",
@@ -971,6 +997,7 @@ describe(
         "Marco alfa",
       );
       planRoute();
+      openMissionManager();
       expect(
         screen.getByTestId("map").getAttribute("data-route-id"),
       ).toBeNull();
@@ -991,6 +1018,7 @@ describe(
       const { mission } = seedRouteMission();
       render(<ScientificExplorer />);
       planRoute();
+      openMissionManager();
       fireEvent.click(
         screen.getByRole("button", { name: "Editar missão " + mission.name }),
       );
@@ -1046,6 +1074,7 @@ describe(
         };
         const { mission } = seedRouteMission({ origin, destination });
         render(<ScientificExplorer />);
+      openMissionManager();
         expect(screen.getByTestId("map").getAttribute("data-layer-id")).toBe(
           "mola",
         );
@@ -1065,6 +1094,7 @@ describe(
       const { markers, mission } = seedRouteMission();
       render(<ScientificExplorer />);
       planRoute();
+      openMissionManager();
       fireEvent.click(screen.getByRole("button", { name: mission.name }));
       expect(screen.getByTestId("map").getAttribute("data-route-id")).toBe(
         mission.id,
@@ -1101,6 +1131,7 @@ describe("Sincronização da missão destacada", () => {
     const records = { version: 1, markers: [], missions: [mission] };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
     render(<ScientificExplorer />);
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: mission.name }));
     expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
       sciencePoints[0].name,

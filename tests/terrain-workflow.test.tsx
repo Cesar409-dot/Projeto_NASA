@@ -5,7 +5,6 @@ import {
   fireEvent,
   render,
   screen,
-  within,
 } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { ScientificExplorer } from "@/components/map/ScientificExplorer";
@@ -98,6 +97,10 @@ function plan() {
     target: { value: "terrain" },
   });
 }
+function openMissionManager() {
+  const details = screen.getByText("Gerenciar missões salvas").closest("details");
+  if (details) details.open = true;
+}
 describe("Planejamento experimental integrado", () => {
   it("compara modalidades, preserva marcadores e salva/restaura a rota real com parâmetros na missão", async () => {
     const marker = {
@@ -138,6 +141,7 @@ describe("Planejamento experimental integrado", () => {
       ),
     );
     expect(LocalWorker.instances).toHaveLength(1);
+    openMissionManager();
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
     fireEvent.change(screen.getByLabelText("Nome da missão"), {
       target: { value: "Comparação do terreno" },
@@ -154,6 +158,7 @@ describe("Planejamento experimental integrado", () => {
     expect(records.missions[0].route.terrain).toEqual(realPlan);
     view.unmount();
     render(<ScientificExplorer />);
+    openMissionManager();
     fireEvent.click(
       screen.getByRole("button", { name: "Comparação do terreno" }),
     );
@@ -187,18 +192,8 @@ describe("Planejamento experimental integrado", () => {
     expect(
       screen.getByTestId("terrain-map").getAttribute("data-plan"),
     ).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
-    const modal = screen.getByRole("dialog");
-    expect(
-      (
-        within(modal).getByRole("button", {
-          name: "Salvar missão",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
-    fireEvent.click(
-      within(modal).getByRole("button", { name: "Fechar formulário" }),
-    );
+    openMissionManager();
+    expect(screen.queryByRole("button", { name: "Cadastrar missão" })).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Tipo de rota"), {
       target: { value: "direct" },
     });

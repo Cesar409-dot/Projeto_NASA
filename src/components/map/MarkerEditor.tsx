@@ -81,6 +81,7 @@ export function MarkerEditor({
         </label>
         <fieldset className={s.locationFields}>
           <legend>Localização em Marte</legend>
+          <p className={s.small}>Um marcador registra um lugar escolhido por você. Depois de salvá-lo, ele pode ser selecionado como origem ou destino.</p>
           <div className={s.methodChoices}>
             <label>
               <input

@@ -16,8 +16,9 @@ export function LayerPanel({
   retry: () => void;
 }) {
   return (
-    <section aria-label="Camadas cartográficas">
+    <section aria-label="Camadas cartográficas" data-guide="basemap">
       <h3>Bases cartográficas</h3>
+      <p className={s.small}>A base cartográfica é a imagem de fundo. Trocar a visualização não altera os pontos nem a rota planejada.</p>
       <fieldset className={s.layerSet}>
         <legend className={u.label}>ESCOLHA A VISUALIZAÇÃO</legend>
         {nasaLayers.map((layer) => (

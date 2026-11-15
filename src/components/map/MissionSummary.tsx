@@ -24,6 +24,7 @@ export function MissionSummary({
       : null;
   return (
     <section
+      data-guide="summary"
       className={s.mission}
       aria-label="Resumo da missão"
       aria-live="polite"
@@ -34,23 +35,23 @@ export function MissionSummary({
       </div>
       <dl className={s.metrics}>
         <div>
-          <dt>Região selecionada</dt>
+          <dt>Região de Marte</dt>
           <dd>{selected.name}</dd>
         </div>
         <div>
-          <dt>Origem</dt>
-          <dd>{origin?.name ?? "A definir"}</dd>
+          <dt>Origem · {origin ? "concluída" : "pendente"}</dt>
+          <dd className={origin ? s.progressComplete : s.progressPending}>{origin?.name ?? "Selecione o ponto inicial da exploração."}</dd>
         </div>
         <div>
-          <dt>Destino</dt>
-          <dd>{destination?.name ?? "A definir"}</dd>
+          <dt>Destino · {destination ? "concluído" : "pendente"}</dt>
+          <dd className={destination ? s.progressComplete : s.progressPending}>{destination?.name ?? (origin ? "Selecione o ponto final da exploração." : "Defina a origem primeiro.")}</dd>
         </div>
         <div>
-          <dt>Estimativa geométrica</dt>
+          <dt>Distância geométrica · {distance !== null ? "calculada" : "pendente"}</dt>
           <dd>
             {distance !== null
               ? `≈ ${Math.round(distance / 1000)} km`
-              : "Selecione origem e destino"}
+              : "A distância aparece após escolher os dois pontos."}
           </dd>
         </div>
       </dl>

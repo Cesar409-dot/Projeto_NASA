@@ -45,7 +45,7 @@ export function RoutePlanner({
     <section className={s.planner} aria-label="Planejamento de Marswalk">
       <h3>Planejar Marswalk</h3>
       <p className={s.small}>
-        Escolha dois pontos. A rota aparece automaticamente no mapa.
+        Planeje um percurso pela superfície marciana. Escolha onde começa e termina; você também pode usar seus próprios marcadores.
       </p>
       <div className={s.routeFields}>
         {(["origin", "destination"] as const).map((key) => (
@@ -56,7 +56,13 @@ export function RoutePlanner({
               </b>
               {key === "origin" ? "Origem" : "Destino"}
             </span>
+            <span className={s.fieldHint}>
+              {key === "origin"
+                ? "Ponto inicial: onde a exploração começa."
+                : "Ponto final: onde a exploração termina."}
+            </span>
             <select
+              data-guide={key === "origin" ? "origin" : "destination"}
               aria-label={key === "origin" ? "Origem" : "Destino"}
               className={u.field}
               value={route[key]}
@@ -79,8 +85,11 @@ export function RoutePlanner({
         ))}
       </div>
       <label className={s.selectLabel}>
-        Tipo de rota
+        <span><b className={s.stepNumber} aria-hidden="true">3</b> Tipo de rota</span>
+        <span className={s.fieldHint}>Escolha como deseja visualizar a conexão entre os pontos selecionados.</span>
         <select
+          data-guide="route-type"
+          aria-label="Tipo de rota"
           className={u.field}
           value={mode}
           onChange={(e) => onModeChange?.(e.target.value as RouteMode)}
