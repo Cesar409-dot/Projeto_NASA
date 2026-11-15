@@ -102,19 +102,20 @@ describe("Marswalk controls", () => {
   });
 });
 
-describe("Greenhouse comparison", () => {
-  it("changes crop details and adds/removes comparison columns", () => {
+describe("Mars Greenhouse inventory", () => {
+  it("selects a category and updates the scientific card", () => {
     render(<Greenhouse />);
-    fireEvent.click(screen.getByRole("button", { name: /Rabanete/ }));
-    expect(screen.getByRole("heading", { name: "RABANETE" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Rabanete" }));
-    expect(screen.getByRole("columnheader", { name: "Rabanete" })).toBeTruthy();
-    for (const name of ["Alface", "Batata", "Rabanete"])
-      fireEvent.click(screen.getByRole("checkbox", { name }));
-    expect(screen.queryByRole("table")).toBeNull();
-    expect(screen.getByRole("status").textContent).toMatch(
-      /Selecione ao menos uma cultura/,
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Selecionar Rabanete / Cenoura / Beterraba",
+      }),
     );
+    expect(
+      screen.getAllByRole("heading", {
+        name: "Rabanete / Cenoura / Beterraba",
+      }).length,
+    ).toBe(2);
+    expect(screen.getByText("Raphanus sativus")).toBeTruthy();
   });
 });
 
