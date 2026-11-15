@@ -377,3 +377,203 @@ describe("Cadastro de marcadores", { timeout: 20000 }, () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+describe("Edição e exclusão de marcadores", { timeout: 20000 }, () => {
+  function seedMarkers() {
+    const markers = ["Ponto norte", "Ponto sul"].map((name, index) => ({
+      id: "personal-test-" + index,
+      name,
+      description: "Descrição original",
+      category: "Pessoal" as const,
+      visited: true,
+      layerId: "ctx",
+      coordinate: {
+        ...sciencePoints[0].coordinate,
+        latitude: 18.44 + index * 0.01,
+        longitude: 77.4,
+      },
+    }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 1, markers, missions: [] }),
+    );
+    return markers;
+  }
+  it("edita os campos, preserva identificação e coordenadas e restaura a alteração após recarregar", () => {
+    const original = seedMarkers();
+    const view = render(<ScientificExplorer />);
+    fireEvent.change(screen.getByLabelText("Origem"), {
+      target: { value: original[0].id },
+    });
+    fireEvent.change(screen.getByLabelText("Destino"), {
+      target: { value: "neretva" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar marcador Ponto norte" }),
+    );
+    expect(
+      (screen.getByLabelText("Nome do marcador") as HTMLInputElement).value,
+    ).toBe("Ponto norte");
+    expect(
+      (screen.getByLabelText("Descrição") as HTMLTextAreaElement).value,
+    ).toBe("Descrição original");
+    fireEvent.change(screen.getByLabelText("Nome do marcador"), {
+      target: { value: "  Ponto revisado  " },
+    });
+    fireEvent.change(screen.getByLabelText("Descrição"), {
+      target: { value: "  Observação revisada  " },
+    });
+    fireEvent.change(screen.getByLabelText("Categoria"), {
+      target: { value: "Recursos" },
+    });
+    fireEvent.click(screen.getByLabelText("Ponto visitado"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar marcador" }));
+    const records = parseRecords(localStorage.getItem(STORAGE_KEY)!);
+    expect(records.markers).toHaveLength(2);
+    expect(records.markers[0]).toEqual({
+      ...original[0],
+      name: "Ponto revisado",
+      description: "Observação revisada",
+      category: "Recursos",
+      visited: false,
+    });
+    expect(records.markers[1]).toEqual(original[1]);
+    expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+      "Ponto revisado",
+    );
+    view.unmount();
+    render(<ScientificExplorer />);
+    expect(
+      screen.getByRole("heading", { name: "Ponto revisado" }),
+    ).toBeTruthy();
+    expect(
+      within(screen.getByLabelText("Origem")).getByRole("option", {
+        name: "Ponto revisado",
+      }),
+    ).toBeTruthy();
+  });
+  it("descarta alterações ao cancelar uma edição, sem gravar ou alterar o registro existente", () => {
+    seedMarkers();
+    const before = localStorage.getItem(STORAGE_KEY);
+    render(<ScientificExplorer />);
+    const write = vi.spyOn(Storage.prototype, "setItem");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar marcador Ponto norte" }),
+    );
+    fireEvent.change(screen.getByLabelText("Nome do marcador"), {
+      target: { value: "Edição cancelada" },
+    });
+    fireEvent.change(screen.getByLabelText("Categoria"), {
+      target: { value: "Risco" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Fechar formulário" }));
+    expect(write).not.toHaveBeenCalled();
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
+    expect(screen.getByRole("heading", { name: "Ponto norte" })).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Edição cancelada" }),
+    ).toBeNull();
+  });
+  it("exclui somente o marcador escolhido, limpa a rota que o usa e mantém os pontos oficiais", () => {
+    const markers = seedMarkers();
+    const official = structuredClone(sciencePoints);
+    const view = render(<ScientificExplorer />);
+    fireEvent.change(screen.getByLabelText("Origem"), {
+      target: { value: markers[0].id },
+    });
+    fireEvent.change(screen.getByLabelText("Destino"), {
+      target: { value: "neretva" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Excluir marcador Ponto norte" }),
+    );
+    expect(parseRecords(localStorage.getItem(STORAGE_KEY)!).markers).toEqual([
+      markers[1],
+    ]);
+    expect(screen.queryByRole("heading", { name: "Ponto norte" })).toBeNull();
+    expect((screen.getByLabelText("Origem") as HTMLSelectElement).value).toBe(
+      "",
+    );
+    expect((screen.getByLabelText("Destino") as HTMLSelectElement).value).toBe(
+      "",
+    );
+    expect(screen.getByTestId("map").getAttribute("data-origin")).toBeNull();
+    view.unmount();
+    render(<ScientificExplorer />);
+    expect(screen.getByRole("heading", { name: "Ponto sul" })).toBeTruthy();
+    expect(
+      within(screen.getByLabelText("Origem")).queryByRole("option", {
+        name: "Ponto norte",
+      }),
+    ).toBeNull();
+    for (const point of official) {
+      expect(
+        within(screen.getByLabelText("Origem")).getByRole("option", {
+          name: point.name,
+        }),
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: "Editar marcador " + point.name }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", {
+          name: "Excluir marcador " + point.name,
+        }),
+      ).toBeNull();
+    }
+    expect(sciencePoints).toEqual(official);
+  });
+  it.each(["edição", "exclusão"])(
+    "preserva o registro quando a gravação da %s falha e permite tentar novamente",
+    (operation) => {
+      const markers = seedMarkers();
+      const before = localStorage.getItem(STORAGE_KEY);
+      render(<ScientificExplorer />);
+      vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+        throw new Error("QuotaExceededError");
+      });
+      if (operation === "edição") {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Editar marcador Ponto norte" }),
+        );
+        fireEvent.change(screen.getByLabelText("Nome do marcador"), {
+          target: { value: "Nome revisado" },
+        });
+        fireEvent.click(
+          screen.getByRole("button", { name: "Salvar marcador" }),
+        );
+        expect(
+          within(screen.getByRole("dialog")).getByRole("alert"),
+        ).toBeTruthy();
+        expect(
+          (screen.getByLabelText("Nome do marcador") as HTMLInputElement).value,
+        ).toBe("Nome revisado");
+      } else {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Excluir marcador Ponto norte" }),
+        );
+        expect(screen.getByRole("alert")).toBeTruthy();
+      }
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
+      expect(screen.getByRole("heading", { name: "Ponto norte" })).toBeTruthy();
+      fireEvent.click(
+        screen.getByRole("button", {
+          name:
+            operation === "edição"
+              ? "Salvar marcador"
+              : "Excluir marcador Ponto norte",
+        }),
+      );
+      const remaining = parseRecords(
+        localStorage.getItem(STORAGE_KEY)!,
+      ).markers;
+      if (operation === "edição")
+        expect(remaining).toEqual([
+          { ...markers[0], name: "Nome revisado" },
+          markers[1],
+        ]);
+      else expect(remaining).toEqual([markers[1]]);
+      expect(screen.queryByRole("alert")).toBeNull();
+    },
+  );
+});
