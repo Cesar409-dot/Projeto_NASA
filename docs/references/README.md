@@ -1,7 +1,9 @@
-# Referências da Mars Greenhouse
+# Referências da estufa
 
-O texto do “Dossiê Técnico e Engenharia de Missão Marte — Frente 2: Astrobiologia, Produção Agrícola e Engenharia de Suporte à Vida”, da equipe Unus Mundus, foi fornecido pelo usuário na conversa de implementação. O PDF original não foi anexado ao repositório, portanto este diretório ainda não contém uma cópia local do documento.
+O arquivo esperado para o material científico da equipe é:
 
-Quando o arquivo estiver disponível, coloque-o em docs/references/astrobiology-dossier.pdf e confirme que corresponde à edição usada no catálogo. A documentação sobre proveniência, referências públicas e limitações está em [GREENHOUSE_SCIENCE.md](../GREENHOUSE_SCIENCE.md).
+\`docs/references/astrobiology-dossier.pdf\`
 
-O catálogo usa o material textual recebido como referência da equipe. Propostas de engenharia, testes terrestres com simulantes, experimentos na ISS e hipóteses de missão permanecem diferenciados.
+O **“Dossiê Técnico Frente 2 — Astrobiologia e Suporte à Vida.pdf”** não estava presente no checkout nem foi encontrado nos locais locais pesquisados durante esta implementação. Nenhuma informação específica do dossiê foi inventada ou substituída por um documento diferente.
+
+As fontes públicas utilizadas e os limites de cada evidência estão documentados em [GREENHOUSE_SCIENCE.md](../GREENHOUSE_SCIENCE.md). Ao receber o PDF, salve uma cópia local no caminho acima e revise o catálogo antes de adicionar faixas numéricas ou métodos por cultura.

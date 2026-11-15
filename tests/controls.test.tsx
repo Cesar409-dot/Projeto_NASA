@@ -107,14 +107,14 @@ describe("Mars Greenhouse inventory", () => {
     render(<Greenhouse />);
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Inspecionar Rabanete / Cenoura / Beterraba",
+        name: "Selecionar Rabanete / Cenoura / Beterraba",
       }),
     );
     expect(
       screen.getAllByRole("heading", {
         name: "Rabanete / Cenoura / Beterraba",
       }).length,
-    ).toBe(1);
+    ).toBe(2);
     expect(screen.getByText("Raphanus sativus")).toBeTruthy();
   });
 });

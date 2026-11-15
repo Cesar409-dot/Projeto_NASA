@@ -1,180 +1,716 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
-import { ArrowLeft, ChevronRight, Droplets, FlaskConical, Leaf, RotateCcw, Search, ShieldCheck, Sprout, Sun, Thermometer, Timer, Check } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Droplets,
+  FlaskConical,
+  Leaf,
+  RotateCcw,
+  RotateCw,
+  Search,
+  Shield,
+  Sprout,
+  Sun,
+  Thermometer,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { crops, scientificSources } from "@/data/crops";
-import type { Crop, EnvironmentalReference } from "@/data/crops";
-import { advanceDamage, defaultEnvironment, evaluateEnvironment, healthStage, recoveryDamage } from "@/lib/greenhouse-simulation";
-import type { Environment, FactorId } from "@/lib/greenhouse-simulation";
-import { CropGlyph } from "./CropGlyph";
+import type { Crop } from "@/data/crops";
+import u from "./ui.module.css";
 import s from "./greenhouse.module.css";
 
-const Crop3DViewer = dynamic(() => import("./Crop3DViewer").then((module) => module.Crop3DViewer), {
-  ssr: false,
-  loading: () => <div className={s.viewerLoading} role="status">Preparando visualização 3D…</div>,
-});
-
-type Filter = "all" | "plants" | "biofactory";
-type ViewerState = "loading" | "ready" | "fallback";
-const filters: Record<Filter, string> = { all: "Todas", plants: "Culturas", biofactory: "Biofábrica" };
-const factorMeta: Record<FactorId, { name: string; icon: typeof Droplets }> = {
-  water: { name: "Água", icon: Droplets },
-  light: { name: "Luz", icon: Sun },
-  temperature: { name: "Temperatura", icon: Thermometer },
+type Filter = "all" | "plants" | "microbial";
+type Environment = {
+  temperature: "fria" | "moderada" | "quente";
+  water: "baixa" | "intermediaria" | "alta";
+  light: "baixa" | "intermediaria" | "alta";
 };
-const factorOrder: FactorId[] = ["water", "light", "temperature"];
+
+const environmentChoices = {
+  temperature: [
+    { value: "fria", label: "Fria", icon: ArrowDown },
+    { value: "moderada", label: "Intermediária", icon: Thermometer },
+    { value: "quente", label: "Quente", icon: ArrowUp },
+  ],
+  water: [
+    { value: "baixa", label: "Baixa", icon: Droplets },
+    { value: "intermediaria", label: "Intermediária", icon: Droplets },
+    { value: "alta", label: "Alta", icon: Droplets },
+  ],
+  light: [
+    { value: "baixa", label: "Baixa", icon: Sun },
+    { value: "intermediaria", label: "Intermediária", icon: Sun },
+    { value: "alta", label: "Alta", icon: Sun },
+  ],
+} as const;
+
+const filterLabels: Record<Filter, string> = {
+  all: "Todas",
+  plants: "Culturas",
+  microbial: "Biofábrica",
+};
 
 function normalize(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
-}
-function qualityLabel(ref: EnvironmentalReference) {
-  return ref.quality === "engineering" ? "Alvo de engenharia" : ref.quality === "dossier" ? "Faixa do dossiê" : "Aproximação educativa";
-}
-function formatValue(value: number, ref: EnvironmentalReference) {
-  return (Number.isInteger(value) ? value : value.toFixed(1)) + " " + ref.unit;
-}
-function rangeState(value: number, ref: EnvironmentalReference) {
-  return value < ref.min ? "Abaixo da referência" : value > ref.max ? "Acima da referência" : "Dentro da referência";
-}
-function levelName(score: number) {
-  return ["Próximo da referência", "Estresse leve ilustrativo", "Estresse moderado ilustrativo", "Estresse severo ilustrativo", "Condição crítica ilustrativa"][score];
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
 }
 
-function SliderControl({ crop, factor, value, onChange }: { crop: Crop; factor: FactorId; value: number; onChange: (value: number) => void }) {
-  const ref = crop.environmentalReferences[factor];
-  const meta = factorMeta[factor];
-  const Icon = meta.icon;
-  const state = rangeState(value, ref);
-  return (
-    <fieldset className={s.sliderControl}>
-      <legend><span className={s.sliderTitle}><Icon size={17} aria-hidden="true" />{meta.name}</span><strong>{formatValue(value, ref)}</strong></legend>
-      <label className={s.visuallyHidden} htmlFor={crop.id + "-" + factor}>{meta.name} para {crop.name}</label>
-      <input id={crop.id + "-" + factor} type="range" min={ref.controlMin} max={ref.controlMax} step={ref.step} value={value} aria-valuetext={formatValue(value, ref) + ". " + state + ". Referência: " + ref.min + " a " + ref.max + " " + ref.unit} onChange={(event) => onChange(Number(event.currentTarget.value))} style={{ "--range-position": (((value - ref.controlMin) / (ref.controlMax - ref.controlMin)) * 100) + "%" } as CSSProperties} />
-      <div className={s.rangeLimits}><span>{ref.controlMin}</span><span>{ref.controlMax} {ref.unit}</span></div>
-      <div className={s.referenceRow}><span>Referência: <b>{ref.min}–{ref.max} {ref.unit}</b></span><span className={value < ref.min || value > ref.max ? s.factorOutside : s.factorOkay}>{state}</span></div>
-      <small className={s.referenceQuality}>{qualityLabel(ref)} · {ref.label}</small>
-    </fieldset>
-  );
-}
-
-function explanationFor(crop: Crop, environment: Environment, damage: number) {
-  const assessment = evaluateEnvironment(crop, environment);
-  const primary = assessment.primary;
-  const subject = crop.biologicalType === "biofactory" ? "O biorreator" : "A planta";
-  const title = crop.biologicalType === "biofactory" ? "O que está acontecendo com o cultivo?" : "O que está acontecendo com a planta?";
-  if (!primary) {
-    const body = damage > 0
-      ? "As condições ambientais voltaram à referência. A cena mantém " + healthStage(damage) + " por dano ilustrativo acumulado. Avance uma etapa de recuperação; isso não equivale a tempo biológico."
-      : "As condições estão dentro das referências usadas nesta simulação. " + subject + " aparece sem sinais visuais significativos de estresse. As referências são alvos de projeto ou aproximações educativas, não previsões para Marte.";
-    return { assessment, title, body, symptoms: damage > 0 ? "A aparência acumulada só muda com as etapas manuais de recuperação." : "Sem estresse ambiental detectado pelos limites desta visualização.", adjustment: damage > 0 ? "Mantenha as condições de referência e avance uma etapa de recuperação." : "Mantenha os controles dentro das referências apresentadas." };
-  }
-  const labels: Record<FactorId, [string, string]> = {
-    water: ["Baixa disponibilidade de água", "Água acima da referência"],
-    light: ["Exposição à luz reduzida", "Exposição à luz elevada"],
-    temperature: ["Temperatura abaixo da referência", "Temperatura acima da referência"],
-  };
-  const more = assessment.secondary.length ? " Outros fatores também estão fora da faixa: " + assessment.secondary.map((factor) => factor.name.toLocaleLowerCase("pt-BR") + " " + factor.direction).join(", ") + "." : "";
-  return { assessment, title, body: primary.summary + " " + primary.symptoms + more + " Nível ambiental: " + levelName(assessment.score).toLocaleLowerCase("pt-BR") + ".", symptoms: primary.symptoms, adjustment: primary.adjustment, factorTitle: labels[primary.id][primary.direction === "abaixo" ? 0 : 1] };
-}
-
-function Inventory({ selectedId, onSelect }: { selectedId: string; onSelect: (crop: Crop) => void }) {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
-  const visible = useMemo(() => {
-    const term = normalize(query.trim());
-    return crops.filter((crop) => {
-      const typeMatch = filter === "all" || (filter === "biofactory" ? crop.biologicalType === "biofactory" : crop.biologicalType === "plant");
-      const haystack = [crop.name, crop.nutritionCategory, ...crop.searchTerms, ...crop.species.flatMap((item) => [item.commonName, item.scientificName, item.cultivar || ""])].join(" ");
-      return typeMatch && (!term || normalize(haystack).includes(term));
-    });
-  }, [filter, query]);
-  return (
-    <section className={s.inventory} aria-labelledby="inventory-title">
-      <header className={s.inventoryHeader}><div><span className={s.eyebrow}>01 / INVENTÁRIO DE CULTIVO</span><h2 id="inventory-title">Escolha uma cultura</h2><p>18 categorias agrícolas para explorar. Selecione um cartão para abrir sua inspeção ambiental.</p></div><span className={s.inventoryCount}><b>{String(visible.length).padStart(2, "0")}</b> / 18 disponíveis</span></header>
-      <div className={s.inventoryToolbar}>
-        <label className={s.searchBox}><Search size={17} aria-hidden="true" /><span className={s.visuallyHidden}>Buscar cultura</span><input type="search" role="searchbox" aria-label="Buscar cultura" placeholder="Buscar nome, espécie ou cultivar…" value={query} onChange={(event) => setQuery(event.currentTarget.value)} /></label>
-        <div className={s.filterTabs} role="group" aria-label="Filtrar categorias">{(Object.keys(filters) as Filter[]).map((key) => <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>{filters[key]}</button>)}</div>
-      </div>
-      <div className={s.cropGrid}>
-        {visible.map((crop, index) => <button className={s.cropCard + (selectedId === crop.id ? " " + s.cropCardSelected : "")} type="button" key={crop.id} onClick={() => onSelect(crop)} aria-label={"Inspecionar " + crop.name} aria-pressed={selectedId === crop.id}>
-          <span className={s.cardIndex}>{String(index + 1).padStart(2, "0")}</span><span className={s.cardVisual}><CropGlyph crop={crop} /></span><span className={s.cardText}><strong>{crop.name}</strong><small>{crop.biologicalType === "biofactory" ? "BIOFÁBRICA · MICRORGANISMOS" : crop.nutritionCategory}</small></span><ChevronRight className={s.cardArrow} size={16} aria-hidden="true" />
-        </button>)}
-        {visible.length === 0 ? <div className={s.emptySearch}>Nenhuma categoria encontrada. Tente outro nome ou espécie.</div> : null}
-      </div>
-    </section>
-  );
-}
-
-function Inspection({ crop, environment, damage, viewerState, onBack, onChange, onRestore, onDamage, onViewerState }: {
-  crop: Crop; environment: Environment; damage: number; viewerState: ViewerState; onBack: () => void;
-  onChange: (factor: FactorId, value: number) => void; onRestore: () => void;
-  onDamage: (update: (current: number) => number) => void; onViewerState: (state: ViewerState) => void;
+function BotanicalArtwork({
+  crop,
+  rotation,
+  zoom,
+  onRotate,
+}: {
+  crop: Crop;
+  rotation: number;
+  zoom: number;
+  onRotate: (rotation: number) => void;
 }) {
-  const response = explanationFor(crop, environment, damage);
-  const score = response.assessment.score;
-  const isHealthyEnvironment = score === 0;
-  const biofactory = crop.biologicalType === "biofactory";
-  const viewerStatus = useCallback((state: "ready" | "fallback") => onViewerState(state), [onViewerState]);
+  const dragStart = useRef<{ x: number; rotation: number } | null>(null);
+  const title = crop.biologicalType === "microbial"
+    ? "Biorreator ilustrativo para " + crop.category
+    : "Ilustração botânica conceitual de " + crop.category;
+
+  function startDrag(event: ReactPointerEvent<SVGSVGElement>) {
+    dragStart.current = { x: event.clientX, rotation };
+    if (event.currentTarget.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  }
+
+  function drag(event: ReactPointerEvent<SVGSVGElement>) {
+    if (!dragStart.current) return;
+    const delta = event.clientX - dragStart.current.x;
+    onRotate(dragStart.current.rotation + delta * 0.8);
+  }
+
+  function stopDrag() {
+    dragStart.current = null;
+  }
+
   return (
-    <section className={s.inspection} aria-labelledby="crop-title">
-      <button className={s.backButton} type="button" onClick={onBack}><ArrowLeft size={17} aria-hidden="true" />Voltar ao inventário</button>
-      <div className={s.inspectionLayout}>
-        <div className={s.inspectionInfo}>
-          <header className={s.inspectionHeading}><span className={s.eyebrow}>{biofactory ? "INSPEÇÃO DE BIOFÁBRICA" : "INSPEÇÃO DA CULTURA"} · {crop.dossierPage}</span><h2 id="crop-title">{crop.name}</h2><p>{crop.description}</p>
-            <div className={s.taxonomyBlock}><span>{biofactory ? "ORGANISMOS / ESPÉCIES" : "ESPÉCIES REPRESENTADAS"}</span>{crop.species.map((item) => <div className={s.speciesRow} key={item.commonName + item.scientificName}><span>{item.commonName}</span><em>{item.scientificName}</em>{item.cultivar ? <small>{item.cultivar}</small> : null}{item.note ? <small>{item.note}</small> : null}</div>)}</div>
-          </header>
-          <section className={s.environmentPanel} aria-labelledby="environment-title"><div className={s.panelHeading}><div><span className={s.eyebrow}>02 / SIMULAÇÃO AMBIENTAL</span><h3 id="environment-title">Ajuste o módulo</h3></div><span className={s.statusPill} data-state={score === 0 ? "ok" : "stress"}>{levelName(score)}</span></div><p className={s.environmentIntro}>Os intervalos são referências educativas. Os controles atualizam a cena imediatamente.</p>
-            <div className={s.controlStack}>{factorOrder.map((factor) => <SliderControl key={factor} crop={crop} factor={factor} value={environment[factor]} onChange={(value) => onChange(factor, value)} />)}</div>
-            <div className={s.controlActions}><button className={s.restoreButton} type="button" onClick={onRestore}><RotateCcw size={15} aria-hidden="true" />Restaurar condições ideais</button><button className={s.resetButton} type="button" onClick={() => onDamage(() => 0)}>Reiniciar dano</button></div>
-            <p className={s.restoreHint}>O botão restaura valores de referência (alvos de engenharia ou aproximações educativas), não um ótimo biológico comprovado. Dano visual acumulado é controlado separadamente.</p>
-          </section>
-          <section className={s.healthPanel} aria-labelledby="health-title"><div className={s.panelHeading}><div><span className={s.eyebrow}>03 / RESPOSTA VISUAL</span><h3 id="health-title">Estado ilustrativo {biofactory ? "do cultivo" : "da planta"}</h3></div><strong className={s.damageStage}>{healthStage(damage)}</strong></div>
-            <div className={s.damageTrack} role="meter" aria-label="Dano ilustrativo acumulado" aria-valuemin={0} aria-valuemax={100} aria-valuenow={damage} aria-valuetext={damage + "% · " + healthStage(damage)}><span style={{ width: damage + "%" }} /></div>
-            <div className={s.damageActions}><button type="button" onClick={() => onDamage((current) => advanceDamage(current, score))} disabled={score === 0 || damage >= 100}><Timer size={15} aria-hidden="true" />Avançar etapa de exposição</button><button type="button" onClick={() => onDamage((current) => recoveryDamage(current, score))} disabled={!isHealthyEnvironment || damage <= 0}><Check size={15} aria-hidden="true" />Avançar recuperação</button></div>
-            <p className={s.simulationCaveat}>Simulação ambiental ilustrativa. Não representa um modelo biológico validado. Cada clique representa uma etapa abstrata, sem duração biológica associada. Estresse atual e dano acumulado são estados separados; não há previsão de crescimento, sobrevivência ou mortalidade.</p>
-          </section>
-          <section className={s.explanationPanel} aria-live="polite" aria-atomic="true"><span className={s.eyebrow}>LEITURA DA SIMULAÇÃO</span><h3>{response.factorTitle || response.title}</h3><p>{response.body}</p><div className={s.explanationDetail}><b>Sintomas na cena</b><span>{response.symptoms}</span></div><div className={s.explanationDetail}><b>O que ajustar</b><span>{response.adjustment}</span></div>{response.assessment.secondary.length ? <p className={s.secondaryFactors}>Também fora da referência: {response.assessment.secondary.map((item) => item.name + " (" + item.direction + ")").join(" · ")}</p> : null}</section>
-          <div className={s.cultivationFacts}>
-            <article><span>USO AGRÍCOLA</span><p>{crop.use}</p></article><article><span>MÉTODO DE CULTIVO</span><p>{crop.cultivationMethod}</p></article>
-            <article className={s.factPair}><div><span>ÁGUA</span><p>{crop.environmentalReferences.water.explanation}</p></div><div><span>LUZ E TEMPERATURA</span><p>{crop.environmentalReferences.light.explanation} {crop.environmentalReferences.temperature.explanation}</p></div></article>
-            <article><span>NUTRIÇÃO E CONTRIBUIÇÃO</span><strong>{crop.nutritionCategory}</strong><p>{crop.nutritionContribution}</p></article><article><span>NUTRIENTES</span><p>{crop.nutrients}</p></article><article><span>CICLO DO DOSSIÊ</span><p>{crop.cycle}</p></article><article className={s.limitation}><span>LIMITAÇÕES CIENTÍFICAS</span><p>{crop.limitations}</p></article>
-            <article className={s.sourceBlock}><span>FONTES DESTA CATEGORIA</span><ul>{crop.sources.map((source) => <li key={source.title + source.url}><a href={source.url} target={source.url.startsWith("#") ? undefined : "_blank"} rel={source.url.startsWith("#") ? undefined : "noreferrer"}>{source.title}</a><small>{source.scope}</small></li>)}</ul></article>
-          </div>
-        </div>
-        <aside className={s.viewerColumn} aria-label="Visualização tridimensional da cultura">
-          <div className={s.viewerHeading}><div><span className={s.eyebrow}>04 / AMOSTRA PROCEDURAL</span><h3>{biofactory ? "Fotobiorreator" : "Modelo da cultura"}</h3></div><span className={s.viewerBadge}>{viewerState === "ready" ? "WEBGL ATIVO" : viewerState === "fallback" ? "MODO COMPATÍVEL" : "CARREGANDO"}</span></div>
-          <div className={s.viewerFrame}><Crop3DViewer key={crop.id} crop={crop} environment={environment} damage={damage} status={viewerState} onStatus={viewerStatus} /><div className={s.viewerCaption}><span>MODELO 3D PROCEDURAL · ILUSTRATIVO</span><span>Arraste para girar · scroll para zoom</span></div></div>
-          <p className={s.visualDisclaimer}><ShieldCheck size={15} aria-hidden="true" />Modelos distinguem grupos de culturas, mas não são representações anatômicas. As reações são educativas.</p>
-          <div className={s.visualLegend}><span><i className={s.legendHealthy} />Referência</span><span><i className={s.legendStress} />Estresse atual</span><span><i className={s.legendDamage} />Dano acumulado</span></div>
-        </aside>
-      </div>
-    </section>
+    <svg
+      className={s.artwork}
+      viewBox="0 0 420 430"
+      role="img"
+      aria-label={title + " — representação vetorial, não anatômica"}
+      style={{
+        transform:
+          "perspective(900px) rotateY(" +
+          rotation +
+          "deg) scale(" +
+          zoom +
+          ")",
+      }}
+      onPointerDown={startDrag}
+      onPointerMove={drag}
+      onPointerUp={stopDrag}
+      onPointerCancel={stopDrag}
+      onLostPointerCapture={stopDrag}
+    >
+      <title>{title}</title>
+      <ellipse cx="210" cy="364" rx="146" ry="29" fill="#b5c991" opacity=".1" />
+      {crop.biologicalType === "microbial" ? (
+        <g className={s.reactorDrawing}>
+          <path d="M151 127h118v31l-7 148c-1 22-17 38-38 38h-28c-21 0-37-16-38-38l-7-148z" />
+          <ellipse cx="210" cy="128" rx="59" ry="15" />
+          <path d="M161 234c30-13 68 14 100-3v71c-1 16-12 28-29 28h-43c-16 0-27-11-28-27z" className={s.reactorFluid} />
+          <path d="M182 99v27m56-27v27m-28-24v71m-43-22h86m-70 42c16 11 42 11 58 0" className={s.reactorLine} />
+          <circle cx="184" cy="269" r="5" className={s.bubble} />
+          <circle cx="213" cy="286" r="7" className={s.bubble} />
+          <circle cx="238" cy="257" r="4" className={s.bubble} />
+          <path d="M156 171h-25v77h25m108-77h25v77h-25" className={s.reactorLine} />
+          <rect x="174" y="356" width="72" height="12" rx="3" />
+        </g>
+      ) : (
+        <g className={s.plantDrawing}>
+          <path d="M210 321V128" className={s.stem} />
+          <path d="M206 228c-38-45-67-35-76-12 13 28 42 34 76 20m8-47c31-44 62-37 73-16-11 26-39 35-73 24m-7-51c-27-34-52-27-60-9 9 21 31 28 60 19m14 54c34-34 58-24 62-5-11 20-33 25-62 15" className={s.leafShape} />
+          <path d="M133 215l68 19m77-77l-64 28m-55-73l48 34m82 51l-60 11" className={s.leafVein} />
+          {crop.visual === "grain" ? (
+            <g className={s.cropAccent}>
+              <path d="M171 138c-17-20-9-37 2-43 12 8 14 25 6 40m30 2c-14-23-3-39 10-44 11 10 9 28-3 43m20 9c-9-24 5-37 19-38 9 13 3 29-11 40" />
+              <path d="M166 100l10 33m27-43l6 39m43-30l-14 39" className={s.leafVein} />
+            </g>
+          ) : null}
+          {crop.visual === "tuber" || crop.visual === "root" ? (
+            <g className={s.underground}>
+              <path d="M70 325c68-14 136-6 280-1" />
+              {crop.visual === "root" ? (
+                <>
+                  <path d="M207 311c-4 26-15 55-13 82 8 9 21 10 31 0-5-29-7-55-9-82z" />
+                  <path d="M207 328l-18 22m30-13l18 23m-37-7l-15 21" className={s.rootDetail} />
+                </>
+              ) : (
+                <>
+                  <ellipse cx="157" cy="352" rx="35" ry="20" transform="rotate(-22 157 352)" />
+                  <ellipse cx="246" cy="352" rx="39" ry="18" transform="rotate(18 246 352)" />
+                  <path d="M157 335v31m-16-25l27 24m78-27v28m-16-19l31 17" className={s.rootDetail} />
+                </>
+              )}
+            </g>
+          ) : null}
+          {crop.visual === "fruit" || crop.visual === "vine" ? (
+            <g className={s.fruitDrawing}>
+              <path d="M148 248c-5 14-7 28-1 39m85-25c-4 17-4 32 1 43m55-49c-5 15-6 26-2 38" className={s.fruitStem} />
+              <path d="M134 279c4-22 38-23 43 0l-5 23c-8 12-29 11-35-1z" />
+              <path d="M215 303c2-25 37-27 42-3l-4 24c-7 13-29 13-36 0z" />
+              {crop.visual === "vine" ? (
+                <path d="M267 280c4-20 32-20 35 1l-4 46c-6 12-23 12-29 1z" className={s.cucumber} />
+              ) : (
+                <path d="M265 290c9-13 32-11 37 4l-4 20c-6 10-24 10-30 0z" />
+              )}
+              <path d="M144 279l9 5 8-5m60 24l8 5 8-5m45-24l7 4 8-5" className={s.calyx} />
+            </g>
+          ) : null}
+          {crop.visual === "legume" ? (
+            <g className={s.pods}>
+              <path d="M135 268c-18 17 6 42 28 26 10-8 12-21 5-31" />
+              <path d="M251 191c22-11 39 18 18 35-14 11-27 9-34-2" />
+              <circle cx="146" cy="278" r="4" /><circle cx="157" cy="288" r="4" />
+              <circle cx="264" cy="208" r="4" /><circle cx="271" cy="220" r="4" />
+            </g>
+          ) : null}
+          <path d="M132 323h157" className={s.rootBase} />
+        </g>
+      )}
+    </svg>
   );
 }
 
 export function Greenhouse() {
-  const [view, setView] = useState<"inventory" | "inspection">("inventory");
-  const [selectedId, setSelectedId] = useState(crops[0].id);
-  const [environment, setEnvironment] = useState<Environment>(() => defaultEnvironment(crops[0]));
-  const [damage, setDamage] = useState(0);
-  const [viewerState, setViewerState] = useState<ViewerState>("loading");
-  const crop = crops.find((item) => item.id === selectedId) || crops[0];
-  const selectCrop = useCallback((next: Crop) => { setSelectedId(next.id); setEnvironment(defaultEnvironment(next)); setDamage(0); setViewerState("loading"); setView("inspection"); }, []);
-  const changeEnvironment = useCallback((factor: FactorId, value: number) => setEnvironment((current) => ({ ...current, [factor]: value })), []);
-  const restore = useCallback(() => setEnvironment(defaultEnvironment(crop)), [crop]);
-  const updateDamage = useCallback((update: (current: number) => number) => setDamage((current) => update(current)), []);
-  const setViewer = useCallback((state: ViewerState) => setViewerState(state), []);
-  const backToInventory = useCallback(() => setView("inventory"), []);
-  return <main className={s.page}><div className={s.shell}>
-    <header className={s.hero}><div className={s.heroCopy}><span className={s.heroKicker}><Sprout size={15} aria-hidden="true" />MÓDULO DE SUPORTE À VIDA · MISSÃO FUTURA</span><h1>Mars <em>Greenhouse</em></h1><p>Um inventário interativo de culturas para explorar como sistemas de cultivo controlado podem apoiar a vida em uma futura missão marciana.</p><div className={s.orientation}><span className={s.orientationIcon}><Leaf size={17} aria-hidden="true" /></span><p><b>Como explorar:</b> escolha uma categoria, ajuste água, luz e temperatura e observe a representação reagir. O estado ambiental é imediato; o dano acumulado avança somente pelas etapas manuais.</p></div></div><div className={s.heroSeal} aria-label="18 categorias no inventário"><span>CATÁLOGO</span><b>18</b><small>CATEGORIAS</small><i /><small>AMBIENTE CONTROLADO</small></div></header>
-    <div className={s.contextStrip}><div><ShieldCheck size={18} aria-hidden="true" /><span><b>Habitat protegido</b>Pressurização, proteção contra radiação e temperatura controlada</span></div><div><Droplets size={18} aria-hidden="true" /><span><b>Água e nutrientes</b>Água tratada e nutrição monitorada</span></div><div><Sun size={18} aria-hidden="true" /><span><b>Luz artificial</b>Espectro e fotoperíodo dependem da cultura</span></div><div><FlaskConical size={18} aria-hidden="true" /><span><b>Substrato tratado</b>Regolito bruto não é solo pronto para cultivo</span></div></div>
-    {view === "inventory" ? <Inventory selectedId={selectedId} onSelect={selectCrop} /> : <Inspection crop={crop} environment={environment} damage={damage} viewerState={viewerState} onBack={backToInventory} onChange={changeEnvironment} onRestore={restore} onDamage={updateDamage} onViewerState={setViewer} />}
-    <section className={s.scienceFooter} id="referencias" aria-labelledby="sources-title"><div className={s.footerIntro}><span className={s.eyebrow}>05 / BASE CIENTÍFICA E LIMITES</span><h2 id="sources-title">Evidência terrestre, orbital e hipótese marciana não são a mesma coisa.</h2><p>A estufa é um conceito hipotético para uma missão futura e não tem localização operacional definida. Arcadia Planitia é o cenário do dossiê da equipe; o mapa principal permanece em Jezero.</p></div>
-      <div className={s.evidenceCards}><article><span>ISS · EXPERIMENTOS</span><p>Veggie, Advanced Plant Habitat e XROOTS estudam cultivo em sistemas controlados na Estação Espacial Internacional.</p></article><article><span>TERRA · SIMULANTES</span><p>Wamelink et al. avaliaram simulantes preparados em laboratório. Isso não equivale a solo de Marte nem comprova todas as 18 categorias.</p></article><article><span>FUTURO · PROPOSTA</span><p>Alvos ambientais e biofábrica aparecem com sua qualidade de referência; não são modelo validado de crescimento em Marte.</p></article></div>
-      <div className={s.footerLinks}>{[scientificSources.veggie, scientificSources.aph, scientificSources.xroots, scientificSources.wamelink, scientificSources.pulschen, scientificSources.bvad].map((source) => <a key={source.title} href={source.url} target={source.url.startsWith("#") ? undefined : "_blank"} rel={source.url.startsWith("#") ? undefined : "noreferrer"}>{source.title}<ChevronRight size={14} aria-hidden="true" /></a>)}</div>
-      <p className={s.dossierProvenance}>Dossiê técnico da equipe fornecido pelo usuário em texto nesta sessão; o PDF não foi anexado ao repositório. A documentação científica do projeto registra a proveniência e os limites de cada referência.</p>
-    </section>
-  </div></main>;
+  const [selectedId, setSelectedId] = useState("batata");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [rotation, setRotation] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [environment, setEnvironment] = useState<Environment>({
+    temperature: "moderada",
+    water: "intermediaria",
+    light: "intermediaria",
+  });
+
+  const crop = crops.find((entry) => entry.id === selectedId) || crops[0];
+  const visibleCrops = useMemo(() => {
+    const normalizedQuery = normalize(query.trim());
+    return crops.filter((entry) => {
+      const matchesType =
+        filter === "all" ||
+        (filter === "plants" && entry.biologicalType === "plant") ||
+        (filter === "microbial" && entry.biologicalType === "microbial");
+      const matchesQuery =
+        !normalizedQuery ||
+        normalize(
+          [entry.category, entry.nutritionCategory, ...entry.searchTerms].join(
+            " ",
+          ),
+        ).includes(normalizedQuery);
+      return matchesType && matchesQuery;
+    });
+  }, [filter, query]);
+
+  const sceneClasses = [
+    s.scene,
+    environment.water === "baixa" ? s.lowWater : "",
+    environment.light === "baixa" ? s.lowLight : "",
+    environment.light === "alta" ? s.highLight : "",
+    environment.temperature !== "moderada" ? s.temperatureChanged : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const environmentalStatus = [
+    environment.water === "baixa"
+      ? "Aparência de estresse hídrico ilustrativa."
+      : "",
+    environment.light === "baixa"
+      ? "Iluminação da visualização reduzida."
+      : "",
+    environment.light === "alta"
+      ? "Iluminação da visualização ampliada."
+      : "",
+    environment.temperature !== "moderada"
+      ? "Condição térmica alterada; adequação da espécie não avaliada."
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  function updateEnvironment<K extends keyof Environment>(
+    key: K,
+    value: Environment[K],
+  ) {
+    setEnvironment((current) => ({ ...current, [key]: value }));
+  }
+
+  function renderEnvironmentControl<K extends keyof Environment>(
+    key: K,
+    label: string,
+    helper: string,
+  ) {
+    return (
+      <fieldset className={s.controlGroup}>
+        <legend>
+          <span>{label}</span>
+          <small>{helper}</small>
+        </legend>
+        <div className={s.controlChoices}>
+          {environmentChoices[key].map((option) => {
+            const Icon = option.icon;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={environment[key] === option.value}
+                onClick={() =>
+                  updateEnvironment(key, option.value as Environment[K])
+                }
+              >
+                <Icon size={15} aria-hidden="true" />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+    );
+  }
+
+  return (
+    <main id="main" className={u.page + " " + s.page}>
+      <div className={s.shell}>
+        <header className={s.hero}>
+          <div>
+            <div className={u.eyebrow + " " + s.heroEyebrow}>
+              <span className={u.dot} />
+              03 / AGRICULTURA ESPACIAL
+            </div>
+            <p className={s.kicker}>GUIA DE SOBREVIVÊNCIA EM MARTE · MÓDULO DE SUPORTE À VIDA</p>
+            <h1>
+              RAÍZES PARA
+              <br />
+              OUTROS MUNDOS.
+            </h1>
+            <p className={s.heroCopy}>
+              Um inventário de culturas e sistemas biológicos para investigar
+              em uma futura missão. Cada cartão separa conhecimento terrestre,
+              ensaios em órbita e hipóteses marcianas.
+            </p>
+          </div>
+          <div className={s.heroStamp}>
+            <span>CATÁLOGO AGRÍCOLA</span>
+            <strong>18</strong>
+            <span>CATEGORIAS</span>
+            <div className={s.stampLine} />
+            <small>ESTUFA · CONCEITO DE MISSÃO FUTURA</small>
+          </div>
+        </header>
+
+        <div className={s.scienceBanner} role="note">
+          <Shield size={20} aria-hidden="true" />
+          <p>
+            A estufa é um conceito de suporte à vida em ambiente controlado.
+            Cultivo em Marte ainda não foi demonstrado. Resultados da ISS e de
+            simulantes terrestres não comprovam produção na superfície marciana.
+          </p>
+        </div>
+
+        <div className={s.dashboard}>
+          <section className={s.inventory} aria-label="Inventário de culturas">
+            <div className={s.sectionEyebrow}>01 / SELECIONE UMA CATEGORIA</div>
+            <div className={s.inventoryHeading}>
+              <h2>Inventário</h2>
+              <span>{visibleCrops.length.toString().padStart(2, "0")}</span>
+            </div>
+            <label className={s.searchBox}>
+              <Search size={17} aria-hidden="true" />
+              <input
+                type="search"
+                aria-label="Buscar cultura"
+                placeholder="Buscar nome ou espécie"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+            <div className={s.filterRow} aria-label="Filtrar por tipo">
+              {(Object.keys(filterLabels) as Filter[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={filter === key}
+                  onClick={() => setFilter(key)}
+                >
+                  {filterLabels[key]}
+                </button>
+              ))}
+            </div>
+            <div className={s.cropList}>
+              {visibleCrops.length ? (
+                visibleCrops.map((entry) => {
+                  const originalIndex = crops.findIndex(
+                    (item) => item.id === entry.id,
+                  );
+                  return (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      className={s.cropItem}
+                      aria-label={"Selecionar " + entry.category}
+                      aria-pressed={crop.id === entry.id}
+                      onClick={() => {
+                        setSelectedId(entry.id);
+                        setRotation(0);
+                      }}
+                    >
+                      <span className={s.cropIndex}>
+                        {(originalIndex + 1).toString().padStart(2, "0")}
+                      </span>
+                      <span className={s.cropItemText}>
+                        <strong>{entry.category}</strong>
+                        <small>
+                          {entry.biologicalType === "microbial"
+                            ? "BIOFÁBRICA · MICRORGANISMOS"
+                            : entry.nutritionCategory}
+                        </small>
+                      </span>
+                      {crop.id === entry.id ? (
+                        <span className={s.selectedMark} aria-hidden="true">
+                          ●
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className={s.emptyResults} role="status">
+                  Nenhuma categoria encontrada. Tente outro termo.
+                </p>
+              )}
+            </div>
+            <p className={s.inventoryFoot}>
+              {crops.filter((entry) => entry.biologicalType === "plant").length}{" "}
+              culturas vegetais · 1 biofábrica conceitual
+            </p>
+          </section>
+
+          <section className={s.viewer} aria-label="Visualização ilustrativa">
+            <header className={s.viewerHeader}>
+              <div>
+                <div className={s.sectionEyebrow}>02 / OBSERVE O ESPÉCIME</div>
+                <h2>{crop.category}</h2>
+              </div>
+              <span className={s.kindBadge}>
+                {crop.biologicalType === "microbial"
+                  ? "BIORREATOR"
+                  : "ILUSTRAÇÃO BOTÂNICA"}
+              </span>
+            </header>
+            <div
+              className={sceneClasses}
+              data-water={environment.water}
+              data-light={environment.light}
+              data-temperature={environment.temperature}
+            >
+              <div className={s.sceneScanline} />
+              <div className={s.sceneOrb} />
+              <div className={s.sceneTag}>
+                <span>VISUALIZADOR</span>
+                <strong>
+                  {crop.biologicalType === "microbial"
+                    ? "SISTEMA DE BIOFÁBRICA"
+                    : "CULTURA SELECIONADA"}
+                </strong>
+              </div>
+              <div className={s.sceneModel}>
+                <BotanicalArtwork
+                  crop={crop}
+                  rotation={rotation}
+                  zoom={zoom}
+                  onRotate={setRotation}
+                />
+              </div>
+              <div className={s.sceneBase}>
+                <span>REPRESENTAÇÃO ESQUEMÁTICA</span>
+                <span>{Math.round(zoom * 100)}% · VISTA INTERATIVA</span>
+              </div>
+              {environment.water === "baixa" ||
+              environment.temperature !== "moderada" ? (
+                <div className={s.sceneAlert} aria-hidden="true">
+                  <span />
+                  CENÁRIO AMBIENTAL ALTERADO
+                </div>
+              ) : null}
+            </div>
+            <div className={s.viewerActions}>
+              <div className={s.rotationControls} aria-label="Girar visualização">
+                <button
+                  type="button"
+                  aria-label="Girar cultura para a esquerda"
+                  onClick={() => setRotation((value) => value - 18)}
+                >
+                  <RotateCcw size={18} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Girar cultura para a direita"
+                  onClick={() => setRotation((value) => value + 18)}
+                >
+                  <RotateCw size={18} />
+                </button>
+                <span>ARRASTE A ILUSTRAÇÃO PARA GIRAR</span>
+              </div>
+              <div className={s.zoomControls}>
+                <button
+                  type="button"
+                  aria-label="Afastar visualização"
+                  onClick={() =>
+                    setZoom((value) => Math.max(0.7, Number((value - 0.15).toFixed(2))))
+                  }
+                >
+                  <ZoomOut size={17} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Aproximar visualização"
+                  onClick={() =>
+                    setZoom((value) => Math.min(1.6, Number((value + 0.15).toFixed(2))))
+                  }
+                >
+                  <ZoomIn size={17} />
+                </button>
+              </div>
+            </div>
+            <div className={s.simulationNotice} role="status" aria-live="polite">
+              <span className={s.noticeMark} />
+              <p>
+                <strong>Simulação ambiental ilustrativa.</strong> Não representa
+                um modelo biológico validado. A ilustração 2,5D é vetorial e não
+                anatômica.
+              </p>
+            </div>
+
+            <section className={s.environmentPanel} aria-label="Controles ambientais">
+              <div className={s.environmentHeading}>
+                <div>
+                  <div className={s.sectionEyebrow}>03 / CENÁRIO VISUAL</div>
+                  <h3>Controles ambientais</h3>
+                </div>
+                <span>SEM PREVISÃO DE CRESCIMENTO</span>
+              </div>
+              <div className={s.environmentGrid}>
+                {renderEnvironmentControl(
+                  "temperature",
+                  "Temperatura",
+                  "condição ilustrativa",
+                )}
+                {renderEnvironmentControl(
+                  "water",
+                  "Água disponível",
+                  "aporte visual",
+                )}
+                {renderEnvironmentControl(
+                  "light",
+                  "Exposição à luz",
+                  "iluminação visual",
+                )}
+              </div>
+              <p className={s.environmentStatus} aria-live="polite">
+                {environmentalStatus ||
+                  "Controles em posição intermediária. Não há avaliação de adequação para esta espécie."}
+                {environment.temperature === "moderada"
+                  ? " Faixa térmica de referência não cadastrada."
+                  : ""}
+              </p>
+            </section>
+          </section>
+
+          <section className={s.sciencePanel} aria-live="polite">
+            <div className={s.sectionEyebrow}>04 / FICHA CIENTÍFICA</div>
+            <div className={s.evidenceBadge}>
+              <span />
+              {crop.evidence}
+            </div>
+            <h2>{crop.category}</h2>
+            <p className={s.scienceIntro}>
+              {crop.biologicalType === "microbial"
+                ? "Categoria de biofábrica distinta das culturas vegetais."
+                : "Categoria agrícola do inventário; espécies e cultivares agrupadas continuam identificadas separadamente."}
+            </p>
+
+            <div className={s.speciesBlock}>
+              <span className={s.fieldLabel}>
+                {crop.biologicalType === "microbial"
+                  ? "ORGANISMO / CEPA"
+                  : "ESPÉCIES REPRESENTADAS"}
+              </span>
+              <ul>
+                {crop.species.map((species) => (
+                  <li key={species.commonName + species.scientificName}>
+                    <span>{species.commonName}</span>
+                    <em>{species.scientificName}</em>
+                    {species.note ? <small>{species.note}</small> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={s.factList}>
+              <article className={s.fact}>
+                <span className={s.fieldLabel}>CATEGORIA NUTRICIONAL</span>
+                <strong>{crop.nutritionCategory}</strong>
+                <p>{crop.nutritionContribution}</p>
+              </article>
+              <article className={s.fact}>
+                <span className={s.fieldLabel}>MÉTODO DE CULTIVO</span>
+                <p>{crop.cultivationMethod}</p>
+              </article>
+              <article className={s.factGrid}>
+                <div>
+                  <span className={s.fieldLabel}>ÁGUA</span>
+                  <p>{crop.waterNeeds}</p>
+                </div>
+                <div>
+                  <span className={s.fieldLabel}>LUZ</span>
+                  <p>{crop.lightNeeds}</p>
+                </div>
+                <div>
+                  <span className={s.fieldLabel}>TEMPERATURA</span>
+                  <p>{crop.temperature}</p>
+                </div>
+                <div>
+                  <span className={s.fieldLabel}>NUTRIENTES</span>
+                  <p>{crop.nutrients}</p>
+                </div>
+              </article>
+              <article className={s.fact}>
+                <span className={s.fieldLabel}>CICLO DE CULTIVO</span>
+                <p>{crop.cycle}</p>
+              </article>
+              <article className={s.limitation}>
+                <span className={s.fieldLabel}>LIMITAÇÕES CIENTÍFICAS</span>
+                <p>{crop.limitation}</p>
+              </article>
+            </div>
+
+            <div className={s.sourceBlock}>
+              <span className={s.fieldLabel}>FONTES DESTA FICHA</span>
+              <ul>
+                {crop.sources.map((source) => (
+                  <li key={source.title + source.url}>
+                    <a href={source.url} target="_blank" rel="noreferrer">
+                      {source.title}
+                    </a>
+                    <small>{source.scope}</small>
+                  </li>
+                ))}
+              </ul>
+              <a
+                className={s.documentationLink}
+                href="#referencias"
+              >
+                Ver metodologia e limites das fontes
+              </a>
+            </div>
+          </section>
+        </div>
+
+        <section className={s.lifeSupport} aria-labelledby="life-support-title">
+          <div className={s.lifeSupportIntro}>
+            <div className={s.sectionEyebrow}>05 / CONTEXTO DE ENGENHARIA</div>
+            <h2 id="life-support-title">A estufa é um sistema de suporte à vida.</h2>
+            <p>
+              Plantas não podem depender do ambiente marciano aberto. O módulo
+              precisa fornecer e monitorar as condições de cultivo e a
+              segurança do alimento.
+            </p>
+          </div>
+          <div className={s.systemGrid}>
+            <article>
+              <Shield size={20} />
+              <strong>Habitat protegido</strong>
+              <p>Pressurização, barreira contra radiação e temperatura controlada.</p>
+            </article>
+            <article>
+              <Droplets size={20} />
+              <strong>Água e nutrientes</strong>
+              <p>Água tratada e recuperada; nutrientes fornecidos em solução ou substrato monitorado.</p>
+            </article>
+            <article>
+              <Sun size={20} />
+              <strong>Luz controlada</strong>
+              <p>Iluminação artificial configurada e monitorada para a cultura escolhida.</p>
+            </article>
+            <article>
+              <Sprout size={20} />
+              <strong>Sistemas em avaliação</strong>
+              <p>Hidroponia, aeroponia e substratos tratados exigem validação por cultura.</p>
+            </article>
+            <article className={s.regolithNote}>
+              <FlaskConical size={20} />
+              <strong>Regolito não tratado não é solo agrícola</strong>
+              <p>
+                Uso como substrato depende de tratamento, análise de contaminantes
+                e validação. Experimentos com simulantes não substituem testes em Marte.
+              </p>
+            </article>
+            <article className={s.locationNote}>
+              <Leaf size={20} />
+              <strong>Conceito sem local operacional definido</strong>
+              <p>
+                O módulo é uma proposta para uma missão futura. Esta interface
+                não altera o mapa principal nem define um local de pouso.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section className={s.references} id="referencias" aria-labelledby="references-title">
+          <header>
+            <div>
+              <div className={s.sectionEyebrow}>06 / LEITURAS E EVIDÊNCIAS</div>
+              <h2 id="references-title">Fontes para continuar a pesquisa</h2>
+            </div>
+            <p>
+              A ficha completa, a proveniência do catálogo e as limitações das
+              evidências estão documentadas no repositório em
+              {" "}docs/GREENHOUSE_SCIENCE.md.
+            </p>
+          </header>
+          <div className={s.referenceGrid}>
+            {[
+              scientificSources.veggie,
+              scientificSources.aph,
+              scientificSources.xroots,
+              scientificSources.spaceCrops,
+              scientificSources.regolith,
+              scientificSources.bionutrients,
+            ].map((source) => (
+              <a
+                className={s.referenceCard}
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                key={source.title}
+              >
+                <span>{source.title}</span>
+                <p>{source.scope}</p>
+                <span className={s.externalArrow}>↗</span>
+              </a>
+            ))}
+          </div>
+          <p className={s.dossierNote}>
+            O dossiê técnico da equipe não estava disponível neste checkout.
+            Parâmetros que dependeriam dele permanecem sem valores e estão
+            identificados como pendentes.
+          </p>
+        </section>
+      </div>
+    </main>
+  );
 }
