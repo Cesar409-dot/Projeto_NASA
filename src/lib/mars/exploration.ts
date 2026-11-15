@@ -5,6 +5,8 @@ import {
   type MarsCoordinate,
   eastLongitude180,
 } from "./coordinates";
+import { terrainModel } from "../../data/terrain-model";
+import type { TerrainPlan } from "./terrain-routing";
 export const markerCategories = [
   "Exploração",
   "Ciência",
@@ -25,7 +27,11 @@ export type PersonalMarker = MapPoint & {
   visited: boolean;
   layerId: string;
 };
-export type MissionRoute = { origin: MapPoint; destination: MapPoint };
+export type MissionRoute = {
+  origin: MapPoint;
+  destination: MapPoint;
+  terrain?: TerrainPlan;
+};
 export type SavedMission = {
   id: string;
   name: string;
@@ -64,7 +70,7 @@ export function routeDistance(route?: MissionRoute): number | null {
   }
 }
 export function distanceLabel(route?: MissionRoute): string {
-  const value = routeDistance(route);
+  const value = route?.terrain?.distanceMetres ?? routeDistance(route);
   return value === null
     ? "Rota não definida"
     : "≈ " +
@@ -99,6 +105,55 @@ function point(v: unknown): v is MapPoint {
         p.imagePosition.every(Number.isFinite)))
   );
 }
+function validTerrain(route: MissionRoute): boolean {
+  const p = route.terrain;
+  if (p === undefined) return true;
+  if (
+    !p ||
+    p.algorithm !== "astar-v1" ||
+    p.modelId !== terrainModel.id ||
+    !p.options ||
+    !Number.isFinite(p.options.maxSlopeDegrees) ||
+    p.options.maxSlopeDegrees < 0 ||
+    p.options.maxSlopeDegrees > 45 ||
+    !Number.isFinite(p.options.slopePenalty) ||
+    p.options.slopePenalty < 0 ||
+    p.options.slopePenalty > 100 ||
+    ![
+      p.distanceMetres,
+      p.ascentMetres,
+      p.descentMetres,
+      p.maxSlopeDegrees,
+      p.cost,
+      p.startOffsetMetres,
+      p.endOffsetMetres,
+      p.visited,
+    ].every((v) => Number.isFinite(v) && v >= 0) ||
+    p.distanceMetres < (routeDistance(route) ?? Infinity) - 0.01 ||
+    p.maxSlopeDegrees > p.options.maxSlopeDegrees + 0.001 ||
+    !Array.isArray(p.path) ||
+    p.path.length < 2 ||
+    p.path.length > 250002 ||
+    !p.path.every(
+      (pair) =>
+        Array.isArray(pair) &&
+        pair.length === 2 &&
+        pair.every(Number.isFinite) &&
+        pair[0] >= terrainModel.bounds[0] &&
+        pair[0] <= terrainModel.bounds[2] &&
+        pair[1] >= terrainModel.bounds[1] &&
+        pair[1] <= terrainModel.bounds[3],
+    )
+  )
+    return false;
+  return [route.origin, route.destination].every((point, i) => {
+    const pair = p.path[i ? p.path.length - 1 : 0];
+    return (
+      Math.abs(pair[0] - point.coordinate.latitude) < 1e-8 &&
+      Math.abs(pair[1] - eastLongitude180(point.coordinate.longitude)) < 1e-8
+    );
+  });
+}
 export function parseRecords(raw: string): ExplorationRecords {
   const data = JSON.parse(raw) as ExplorationRecords;
   if (
@@ -123,7 +178,8 @@ export function parseRecords(raw: string): ExplorationRecords {
         validDate(m.date) &&
         point(m.route?.origin) &&
         point(m.route?.destination) &&
-        routeDistance(m.route) !== null,
+        routeDistance(m.route) !== null &&
+        validTerrain(m.route),
     ) ||
     new Set(data.markers.map((m) => m.id)).size !== data.markers.length ||
     new Set(data.missions.map((m) => m.id)).size !== data.missions.length
