@@ -577,3 +577,165 @@ describe("Edição e exclusão de marcadores", { timeout: 20000 }, () => {
     },
   );
 });
+
+describe("Cadastro de missões", { timeout: 20000 }, () => {
+  it.each(["Nome da missão", "Objetivo", "Data planejada"])(
+    "exige o campo %s antes de salvar",
+    (field) => {
+      render(<ScientificExplorer />);
+      planRoute();
+      fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+      fillMission();
+      const input = screen.getByLabelText(field) as HTMLInputElement;
+      expect(input.required).toBe(true);
+      fireEvent.change(input, {
+        target: { value: field === "Data planejada" ? "" : "   " },
+      });
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Salvar missão",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      fireEvent.submit(input.closest("form")!);
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(screen.getByRole("dialog")).toBeTruthy();
+      fireEvent.change(input, {
+        target: {
+          value: field === "Data planejada" ? "2026-12-01" : "Campo preenchido",
+        },
+      });
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Salvar missão",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false);
+    },
+  );
+  it("salva os campos preenchidos e a rota selecionada e apresenta a missão imediatamente", () => {
+    const view = render(<ScientificExplorer />);
+    planRoute();
+    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.getAttribute("aria-labelledby")).toBe("map-dialog-title");
+    expect(
+      within(dialog).getByText(/Cratera Belva → Neretva Vallis/),
+    ).toBeTruthy();
+    fillMission("  Reconhecimento do delta  ");
+    fireEvent.change(within(dialog).getByLabelText("Objetivo"), {
+      target: { value: "  Observar depósitos sedimentares  " },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Descrição"), {
+      target: { value: "  Registro planejado pelo astronauta.  " },
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Salvar missão" }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const stored = parseRecords(localStorage.getItem(STORAGE_KEY)!);
+    expect(stored.missions).toHaveLength(1);
+    expect(stored.missions[0]).toMatchObject({
+      name: "Reconhecimento do delta",
+      objective: "Observar depósitos sedimentares",
+      description: "Registro planejado pelo astronauta.",
+      date: "2026-12-01",
+      route: {
+        origin: { id: "belva", coordinate: sciencePoints[0].coordinate },
+        destination: { id: "neretva", coordinate: sciencePoints[1].coordinate },
+      },
+    });
+    const list = screen.getByRole("region", { name: "Minhas missões" });
+    expect(
+      within(list).getByRole("button", { name: "Reconhecimento do delta" }),
+    ).toBeTruthy();
+    expect(list.textContent).toContain("Observar depósitos sedimentares");
+    expect(list.textContent).toContain("01/12/2026");
+    expect(list.textContent).toContain("Origem: Cratera Belva");
+    expect(list.textContent).toContain("Destino: Neretva Vallis");
+    expect(list.textContent).toContain("Distância estimada: ≈");
+    view.unmount();
+    render(<ScientificExplorer />);
+    expect(
+      screen.getByRole("button", { name: "Reconhecimento do delta" }),
+    ).toBeTruthy();
+  });
+  it("descarta o rascunho ao fechar ou cancelar o modal e permite cadastrar sem descrição", () => {
+    render(<ScientificExplorer />);
+    planRoute();
+    const write = vi.spyOn(Storage.prototype, "setItem");
+    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+    fillMission("Rascunho fechado");
+    fireEvent.click(screen.getByRole("button", { name: "Fechar formulário" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+    expect(
+      (screen.getByLabelText("Nome da missão") as HTMLInputElement).value,
+    ).toBe("");
+    fillMission("Rascunho cancelado");
+    fireEvent(
+      screen.getByRole("dialog"),
+      new Event("cancel", { bubbles: true, cancelable: true }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(write).not.toHaveBeenCalled();
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+    fillMission("Missão sem descrição");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
+    expect(
+      parseRecords(localStorage.getItem(STORAGE_KEY)!).missions[0].description,
+    ).toBe("");
+  });
+  it("bloqueia a submissão com apenas a origem selecionada e orienta a completar a rota", () => {
+    render(<ScientificExplorer />);
+    fireEvent.change(screen.getByLabelText("Origem"), {
+      target: { value: "belva" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+    fillMission();
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("status").textContent).toContain(
+      "Selecione origem e destino diferentes",
+    );
+    expect(
+      (
+        within(dialog).getByRole("button", {
+          name: "Salvar missão",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    fireEvent.submit(screen.getByLabelText("Nome da missão").closest("form")!);
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+  it("permite repetir um cadastro que falhou sem duplicar nem sobrescrever missões existentes", () => {
+    render(<ScientificExplorer />);
+    planRoute();
+    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+    fillMission("Missão original");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
+    const original = localStorage.getItem(STORAGE_KEY)!;
+    const existing = parseRecords(original).missions[0];
+    fireEvent.click(screen.getByRole("button", { name: "Cadastrar missão" }));
+    fillMission("Segunda missão");
+    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new Error("QuotaExceededError");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(original);
+    expect(within(screen.getByRole("dialog")).getByRole("alert")).toBeTruthy();
+    expect(
+      (screen.getByLabelText("Nome da missão") as HTMLInputElement).value,
+    ).toBe("Segunda missão");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar missão" }));
+    const saved = parseRecords(localStorage.getItem(STORAGE_KEY)!).missions;
+    expect(saved).toHaveLength(2);
+    expect(saved[0]).toEqual(existing);
+    expect(saved[1].name).toBe("Segunda missão");
+    expect(saved[1].id).not.toBe(existing.id);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
