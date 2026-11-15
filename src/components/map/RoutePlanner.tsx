@@ -1,4 +1,5 @@
 "use client";
+import type { MapPoint } from "@/lib/mars/exploration";
 import type { Dispatch } from "react";
 import { sciencePoints } from "@/data/science-points";
 import type { RouteAction, RouteState } from "@/lib/mars/route-state";
@@ -8,7 +9,9 @@ import s from "../map.module.css";
 export function RoutePlanner({
   route,
   dispatch,
+  points = sciencePoints,
 }: {
+  points?: MapPoint[];
   route: RouteState;
   dispatch: Dispatch<RouteAction>;
 }) {
@@ -23,8 +26,8 @@ export function RoutePlanner({
             value={route[key]}
             onChange={(e) => dispatch({ type: key, id: e.target.value })}
           >
-            <option value="">Selecione um centro catalogado</option>
-            {sciencePoints.map((p) => (
+            <option value="">Selecione um ponto</option>
+            {points.map((p) => (
               <option
                 key={p.id}
                 value={p.id}

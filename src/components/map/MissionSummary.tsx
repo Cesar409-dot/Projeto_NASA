@@ -1,4 +1,4 @@
-import type { SciencePoint } from "@/data/science-points";
+import type { MapPoint } from "@/lib/mars/exploration";
 import { surfaceDistanceMetres } from "@/lib/mars/coordinates";
 import u from "../ui.module.css";
 import s from "../map.module.css";
@@ -9,9 +9,9 @@ export function MissionSummary({
   destination,
   isLocal,
 }: {
-  selected: SciencePoint;
-  origin?: SciencePoint;
-  destination?: SciencePoint;
+  selected: MapPoint;
+  origin?: MapPoint;
+  destination?: MapPoint;
   isLocal: boolean;
 }) {
   const distance =
@@ -25,7 +25,7 @@ export function MissionSummary({
       aria-live="polite"
     >
       <div className={u.row}>
-        <h2>PAINEL DE MISSÃO</h2>
+        <h2>RESUMO DA EXPLORAÇÃO</h2>
         <span className={u.badge}>JEZERO / MARTE</span>
       </div>
       <dl className={s.metrics}>
@@ -54,10 +54,11 @@ export function MissionSummary({
       {origin || destination ? (
         <ul>
           {[origin, destination]
-            .filter((p): p is SciencePoint => !!p)
+            .filter((p): p is MapPoint => !!p)
             .map((p) => (
               <li key={p.id}>
-                <strong>{p.name}:</strong> {p.objective}
+                <strong>{p.name}:</strong>{" "}
+                {p.objective ?? "Ponto personalizado de exploração."}
               </li>
             ))}
         </ul>
@@ -66,11 +67,12 @@ export function MissionSummary({
       )}
       <p className={s.small}>
         Distância pelo arco de grande círculo em esfera marciana de raio
-        3.396.190 m, arredondada ao quilômetro. Centros do catálogo USGS/IAU,
-        rede MDIM 2.1, publicados a 0,01°. Não inclui relevo, obstáculos,
-        segurança, duração ou distância efetivamente caminhável. O registro
-        espacial com a base orbital MOLA não está validado para precisão
-        operacional.
+        3.396.190 m, arredondada ao quilômetro. Pontos oficiais usam centros do
+        catálogo USGS/IAU, rede MDIM 2.1, publicados a 0,01°. Marcadores
+        próprios usam posições da grade da base selecionada. Não inclui relevo,
+        obstáculos, segurança, duração ou distância efetivamente caminhável. O
+        registro espacial com a base orbital MOLA não está validado para
+        precisão operacional.
       </p>
       {isLocal && (
         <p className={u.notice}>

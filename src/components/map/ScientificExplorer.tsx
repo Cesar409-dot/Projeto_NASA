@@ -1,6 +1,17 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useReducer, useState, useMemo } from "react";
+import { useReducer, useState } from "react";
+import { useExplorationRecords } from "./useExplorationRecords";
+import { MarkerEditor } from "./MarkerEditor";
+import { MissionManager } from "./MissionManager";
+import {
+  distanceLabel,
+  routeDistance,
+  type PersonalMarker,
+  type MissionRoute,
+  type SavedMission,
+} from "@/lib/mars/exploration";
+import type { MarsCoordinate } from "@/lib/mars/coordinates";
 import { Crosshair } from "lucide-react";
 import { sciencePoints } from "@/data/science-points";
 import { nasaLayers } from "@/data/map-layers";
@@ -22,6 +33,11 @@ const TerrainMap = dynamic(() => import("./LeafletCanvas"), {
 });
 
 export function ScientificExplorer() {
+  const { records, ready, error, save } = useExplorationRecords();
+  const [adding, setAdding] = useState(false);
+  const [editingMarker, setEditingMarker] = useState<PersonalMarker>();
+  const [savedRoute, setSavedRoute] = useState<SavedMission>();
+  const [wide, setWide] = useState(false);
   const [selectedId, setSelectedId] = useState("belva");
   const [layerId, setLayerId] = useState("ctx");
   const [showPoints, setShowPoints] = useState(true),
@@ -29,14 +45,36 @@ export function ScientificExplorer() {
   const [route, dispatch] = useReducer(routeReducer, emptyRoute);
   const { health, fail, retry } = useLayerHealth();
   const selected = sciencePoints.find((p) => p.id === selectedId)!;
-  const origin = sciencePoints.find((p) => p.id === route.origin),
-    destination = sciencePoints.find((p) => p.id === route.destination);
-  const activeLayer = useMemo(
-    () =>
-      nasaLayers.find(
-        (l) => l.id === layerId && health[l.id]?.state === "ready",
-      ),
-    [layerId, health],
+  const points = [...sciencePoints, ...records.markers];
+  const origin = points.find((p) => p.id === route.origin),
+    destination = points.find((p) => p.id === route.destination);
+  const plannedRoute =
+    origin && destination ? { origin, destination } : undefined;
+  const displayedRoute: MissionRoute | undefined =
+    savedRoute?.route ?? plannedRoute;
+  function choosePosition(coordinate: MarsCoordinate) {
+    if (!adding || !activeLayer || !ready) return;
+    setAdding(false);
+    setEditingMarker({
+      id: "personal-" + crypto.randomUUID(),
+      name: "",
+      coordinate,
+      description: "",
+      category: "Exploração",
+      visited: false,
+      layerId: activeLayer.id,
+    });
+  }
+  function removeMarker(id: string) {
+    if (
+      save({ ...records, markers: records.markers.filter((m) => m.id !== id) })
+    ) {
+      if (route.origin === id || route.destination === id)
+        dispatch({ type: "clear" });
+    }
+  }
+  const activeLayer = nasaLayers.find(
+    (l) => l.id === layerId && health[l.id]?.state === "ready",
   );
   const local = !activeLayer;
   const failed = layerId !== "image" && health[layerId]?.state === "error";
@@ -55,14 +93,17 @@ export function ScientificExplorer() {
           científicas. Planeje perguntas antes de planejar passos.
         </p>
       </div>
-      <div className={s.workspace}>
+      <div className={`${s.workspace} ${wide ? s.expanded : ""}`}>
         <aside className={s.sidebar}>
           <span className={u.label}>CONTROLE DE MISSÃO</span>
           <LayerPanel
             activeId={
               local && health[layerId]?.state !== undefined ? "image" : layerId
             }
-            onChange={setLayerId}
+            onChange={(id) => {
+              setAdding(false);
+              setLayerId(id);
+            }}
             health={health}
             retry={retry}
           />
@@ -99,11 +140,25 @@ export function ScientificExplorer() {
             />
           </label>
           <div className={u.divider} />
-          <RoutePlanner route={route} dispatch={dispatch} />
+          <RoutePlanner
+            route={route}
+            points={points}
+            dispatch={(action) => {
+              setSavedRoute(undefined);
+              dispatch(action);
+            }}
+          />
+          <p className={s.small} aria-live="polite">
+            {distanceLabel(plannedRoute)}
+          </p>
         </aside>
         <div className={s.mapColumn}>
           <div className={s.mapTop}>
-            <span>JEZERO / MARTE</span>
+            <span>
+              {activeLayer?.id === "mola"
+                ? "MARTE / RELEVO GLOBAL"
+                : "JEZERO / MARTE"}
+            </span>
             <span className={u.badge}>
               {activeLayer ? activeLayer.name : "IMAGEM LOCAL · ESQUEMA"}
             </span>
@@ -120,6 +175,34 @@ export function ScientificExplorer() {
               isso.
             </p>
           )}
+          <div className={s.explorationControls}>
+            <button
+              className={u.choice}
+              aria-pressed={wide}
+              onClick={() => setWide(!wide)}
+            >
+              {wide ? "Mostrar painel lateral" : "Ampliar área do mapa"}
+            </button>
+            <button
+              className={u.choice}
+              disabled={!activeLayer || !ready}
+              aria-pressed={adding}
+              onClick={() => setAdding(!adding)}
+            >
+              {adding ? "Cancelar marcador" : "Adicionar marcador"}
+            </button>
+            <p className={s.small}>
+              {adding
+                ? "Clique em uma posição dentro da cobertura cartográfica para abrir o formulário."
+                : "Arraste para deslocar; use +/− ou a roda para ampliar. Marcadores próprios: azul; locais oficiais: laranja."}
+            </p>
+            {!activeLayer && (
+              <p className={s.small}>
+                Para adicionar marcadores, selecione uma camada NASA disponível.
+                A imagem local não possui coordenadas verificáveis.
+              </p>
+            )}
+          </div>
           <TerrainMap
             key={activeLayer?.id ?? "image"}
             layer={activeLayer}
@@ -127,8 +210,13 @@ export function ScientificExplorer() {
             onSelect={setSelectedId}
             showPoints={showPoints}
             showRoute={showRoute}
-            origin={origin}
-            destination={destination}
+            origin={displayedRoute?.origin}
+            destination={displayedRoute?.destination}
+            personalMarkers={records.markers}
+            onMarkerSelect={setEditingMarker}
+            adding={adding && !!activeLayer}
+            onPosition={choosePosition}
+            routeFocus={savedRoute?.id}
             onLayerError={fail}
           />
           <div className={s.coordinates}>
@@ -136,13 +224,117 @@ export function ScientificExplorer() {
               ? "GRADE ANGULAR MARCIANA · PLANETOCÊNTRICA / LESTE · USO EDUCATIVO"
               : "IMAGEM OFICIAL SEM GEORREFERENCIAMENTO · MARCADORES EM POSIÇÕES EDITORIAIS"}
           </div>
-          <PointDetails point={selected} dispatch={dispatch} />
+          <PointDetails
+            point={selected}
+            dispatch={(action) => {
+              setSavedRoute(undefined);
+              dispatch(action);
+            }}
+          />
         </div>
       </div>
+      {error && (
+        <p className={s.mapAlert} role="alert">
+          {error}
+        </p>
+      )}
+      <section className={s.mission} aria-labelledby="markers-title">
+        <h2 id="markers-title">Meus marcadores</h2>
+        {!records.markers.length && (
+          <p>Use “Adicionar marcador” e selecione uma posição no mapa.</p>
+        )}
+        <div className={s.missionList}>
+          {records.markers.map((m) => (
+            <article key={m.id} className={s.record}>
+              <h3>{m.name}</h3>
+              <p>
+                {m.category} · {m.visited ? "Visitado" : "Não visitado"}
+              </p>
+              <p>{m.description}</p>
+              <p className={s.small}>
+                {m.coordinate.latitude.toFixed(5)}° N,{" "}
+                {m.coordinate.longitude.toFixed(5)}° E · Base: {m.layerId}
+              </p>
+              <div className={s.actions}>
+                <button
+                  className={u.choice}
+                  onClick={() => setEditingMarker(m)}
+                >
+                  Editar marcador {m.name}
+                </button>
+                <button className={u.choice} onClick={() => removeMarker(m.id)}>
+                  Excluir marcador {m.name}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+      {editingMarker && (
+        <MarkerEditor
+          key={editingMarker.id}
+          marker={editingMarker}
+          error={error}
+          onClose={() => setEditingMarker(undefined)}
+          onSave={(m) => {
+            const markers = records.markers.some((p) => p.id === m.id)
+              ? records.markers.map((p) => (p.id === m.id ? m : p))
+              : [...records.markers, m];
+            if (save({ ...records, markers })) setEditingMarker(undefined);
+          }}
+        />
+      )}
+      <MissionManager
+        error={error}
+        missions={records.missions}
+        ready={ready}
+        currentRoute={
+          displayedRoute && routeDistance(displayedRoute) !== null
+            ? displayedRoute
+            : undefined
+        }
+        activeId={savedRoute?.id}
+        onSave={(m) => {
+          const missions = records.missions.some((p) => p.id === m.id)
+            ? records.missions.map((p) => (p.id === m.id ? m : p))
+            : [...records.missions, m];
+          const success = save({ ...records, missions });
+          if (success && savedRoute?.id === m.id) setSavedRoute(m);
+          return success;
+        }}
+        onDelete={(id) => {
+          if (
+            save({
+              ...records,
+              missions: records.missions.filter((m) => m.id !== id),
+            }) &&
+            savedRoute?.id === id
+          )
+            setSavedRoute(undefined);
+        }}
+        onSelect={(m) => {
+          setSavedRoute(m);
+          setShowRoute(true);
+          const covers = (layer: (typeof nasaLayers)[number]) =>
+            [m.route.origin, m.route.destination].every(
+              (p) =>
+                p.coordinate.latitude >= layer.bounds[0][0] &&
+                p.coordinate.latitude <= layer.bounds[1][0] &&
+                p.coordinate.longitude >= layer.bounds[0][1] &&
+                p.coordinate.longitude <= layer.bounds[1][1],
+            );
+          if (!activeLayer || !covers(activeLayer)) {
+            const compatible = nasaLayers.find(
+              (l) => health[l.id]?.state === "ready" && covers(l),
+            );
+            if (compatible) setLayerId(compatible.id);
+          }
+        }}
+      />
       <MissionSummary
         selected={selected}
-        origin={origin}
-        destination={destination}
+        origin={displayedRoute?.origin}
+        destination={displayedRoute?.destination}
         isLocal={local}
       />
       <p className={u.notice}>

@@ -327,3 +327,79 @@
     font-size: 9px;
   }
 }
+
+.explorationControls {
+  padding: 14px 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+}
+.explorationControls p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.expanded {
+  grid-template-columns: 1fr;
+}
+.expanded .sidebar {
+  display: none;
+}
+.missionList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.record {
+  border: 1px solid var(--line);
+  padding: 20px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.record p {
+  font-size: 13px;
+}
+.record details {
+  margin: 14px 0;
+}
+.record summary {
+  cursor: pointer;
+}
+.dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 26px;
+  width: min(600px, calc(100vw - 32px));
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+.dialog::backdrop {
+  background: #000b;
+}
+.dialog h2 {
+  font-size: 24px;
+}
+.form {
+  display: grid;
+  gap: 18px;
+  margin-top: 20px;
+}
+.form label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+.form label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+}
+.form textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.dialog button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

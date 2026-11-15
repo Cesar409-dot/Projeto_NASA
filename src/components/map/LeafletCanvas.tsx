@@ -1,18 +1,23 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { CRS, type LatLngBoundsExpression } from "leaflet";
 import {
   MapContainer,
   TileLayer,
+  ZoomControl,
   ImageOverlay,
   CircleMarker,
   Tooltip,
   Polyline,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
+import type { MapPoint, PersonalMarker } from "@/lib/mars/exploration";
+import { routeDistance, routeSegments } from "@/lib/mars/exploration";
+import type { MarsCoordinate } from "@/lib/mars/coordinates";
 import { sciencePoints, type SciencePoint } from "@/data/science-points";
 import { tileTemplate, type NasaLayer } from "@/data/map-layers";
-import { greatCircleLine, marsLatLng } from "@/lib/mars/coordinates";
+import { marsLatLng } from "@/lib/mars/coordinates";
 import { marsAngularCRS } from "@/lib/mars/crs";
 import s from "../map.module.css";
 const imageBounds: LatLngBoundsExpression = [
@@ -65,6 +70,62 @@ function ViewControl({
   );
 }
 
+function MapInteraction({
+  layer,
+  adding,
+  onPosition,
+  origin,
+  destination,
+  routeFocus,
+}: {
+  layer?: NasaLayer;
+  adding: boolean;
+  onPosition: (p: MarsCoordinate) => void;
+  origin?: MapPoint;
+  destination?: MapPoint;
+  routeFocus?: string;
+}) {
+  const map = useMapEvents({
+    click(event) {
+      if (!adding || !layer) return;
+      const { lat, lng } = event.latlng;
+      if (
+        lat < layer.bounds[0][0] ||
+        lat > layer.bounds[1][0] ||
+        lng < layer.bounds[0][1] ||
+        lng > layer.bounds[1][1]
+      )
+        return;
+      onPosition({
+        body: "Mars",
+        latitudeType: "planetocentric",
+        longitudeDirection: "east",
+        latitude: lat,
+        longitude: lng,
+      });
+    },
+  });
+  useEffect(() => {
+    map.getContainer().style.cursor = adding ? "crosshair" : "";
+    return () => {
+      map.getContainer().style.cursor = "";
+    };
+  }, [map, adding]);
+  useEffect(() => {
+    if (!routeFocus || !origin || !destination) return;
+    if (layer)
+      map.fitBounds(
+        [marsLatLng(origin.coordinate), marsLatLng(destination.coordinate)],
+        { padding: [50, 50], maxZoom: layer.maxNativeZoom },
+      );
+    else if (origin.imagePosition && destination.imagePosition)
+      map.fitBounds([origin.imagePosition, destination.imagePosition], {
+        padding: [50, 50],
+      });
+  }, [map, layer, origin, destination, routeFocus]);
+  return null;
+}
+
 export default function LeafletCanvas({
   layer,
   selected,
@@ -74,33 +135,59 @@ export default function LeafletCanvas({
   origin,
   destination,
   onLayerError,
+  personalMarkers = [],
+  onMarkerSelect = () => {},
+  adding = false,
+  onPosition = () => {},
+  routeFocus,
 }: {
   layer?: NasaLayer;
   selected: SciencePoint;
   onSelect: (id: string) => void;
   showPoints: boolean;
   showRoute: boolean;
-  origin?: SciencePoint;
-  destination?: SciencePoint;
+  origin?: MapPoint;
+  destination?: MapPoint;
+  personalMarkers?: PersonalMarker[];
+  onMarkerSelect?: (marker: PersonalMarker) => void;
+  adding?: boolean;
+  onPosition?: (point: MarsCoordinate) => void;
+  routeFocus?: string;
   onLayerError: (id: string) => void;
 }) {
   const [loading, setLoading] = useState(Boolean(layer));
   const [imageError, setImageError] = useState(false);
+  const [partialError, setPartialError] = useState(false);
+  const tileCounts = useRef({ loaded: 0, failed: 0 });
   const line = useMemo(
     () =>
-      origin && destination
+      origin && destination && routeDistance({ origin, destination }) !== null
         ? layer
-          ? greatCircleLine(origin.coordinate, destination.coordinate)
-          : [origin.imagePosition, destination.imagePosition]
+          ? routeSegments({ origin, destination })
+          : origin.imagePosition && destination.imagePosition
+            ? [[origin.imagePosition, destination.imagePosition]]
+            : []
         : [],
     [origin, destination, layer],
   );
   const tileEvents = useMemo(
     () => ({
-      loading: () => setLoading(true),
-      load: () => setLoading(false),
+      loading: () => {
+        tileCounts.current = { loaded: 0, failed: 0 };
+        setLoading(true);
+        setPartialError(false);
+      },
+      tileload: () => {
+        tileCounts.current.loaded++;
+      },
+      load: () => {
+        setLoading(false);
+        if (tileCounts.current.failed && !tileCounts.current.loaded && layer)
+          onLayerError(layer.id);
+      },
       tileerror: () => {
-        if (layer) onLayerError(layer.id);
+        tileCounts.current.failed++;
+        setPartialError(true);
       },
     }),
     [layer, onLayerError],
@@ -124,14 +211,29 @@ export default function LeafletCanvas({
     <div className={s.canvasWrap}>
       {loading && (
         <span className={s.tileStatus} role="status">
-          Carregando imagem orbital…
+          Carregando base cartográfica…
         </span>
       )}
       {outside && (
         <span className={s.coverageNotice} role="status">
-          Local fora desta cobertura. Selecione CTX regional ou MOLA para contexto.
+          Local fora desta cobertura. Selecione CTX regional ou MOLA para
+          contexto.
         </span>
       )}
+      {partialError && (
+        <span className={s.coverageNotice} role="status">
+          Alguns tiles não carregaram ou não têm dados. Áreas vazias não indicam
+          terreno conhecido.
+        </span>
+      )}
+      {!layer &&
+        ((origin && !origin.imagePosition) ||
+          (destination && !destination.imagePosition)) && (
+          <span className={s.coverageNotice} role="status">
+            Esta rota possui marcadores geográficos e não pode ser desenhada na
+            imagem local. Ative uma camada NASA disponível.
+          </span>
+        )}
       {imageError && (
         <span className={s.coverageNotice} role="alert">
           A imagem local não carregou. Os locais e o painel de missão continuam
@@ -148,8 +250,18 @@ export default function LeafletCanvas({
         maxZoom={layer ? layer.maxNativeZoom + 2 : 2}
         scrollWheelZoom={true}
         attributionControl={true}
+        zoomControl={false}
       >
+        <ZoomControl zoomInTitle="Ampliar" zoomOutTitle="Reduzir" />
         <ViewControl selected={selected} layer={layer} />
+        <MapInteraction
+          layer={layer}
+          adding={adding}
+          onPosition={onPosition}
+          origin={origin}
+          destination={destination}
+          routeFocus={routeFocus}
+        />
         {layer ? (
           <TileLayer
             url={tileTemplate(layer)}
@@ -173,12 +285,40 @@ export default function LeafletCanvas({
             eventHandlers={{ error: () => setImageError(true) }}
           />
         )}
-        {showRoute && line.length > 1 && (
+        {showRoute && line.length > 0 && (
           <Polyline
             positions={line}
-            pathOptions={{ color: "#f6a578", weight: 3, dashArray: "7 9" }}
+            pathOptions={{
+              color: routeFocus ? "#a5ffe0" : "#f6a578",
+              weight: routeFocus ? 5 : 3,
+              dashArray: "7 9",
+            }}
           />
         )}
+        {layer &&
+          personalMarkers.map((p) => (
+            <CircleMarker
+              key={p.id}
+              center={marsLatLng(p.coordinate)}
+              radius={8}
+              pathOptions={{
+                color: p.visited ? "#a5ffe0" : "#8ed9ff",
+                fillColor: "#2685b4",
+                fillOpacity: 1,
+                weight: 3,
+              }}
+              eventHandlers={{
+                click: () => {
+                  if (!adding) onMarkerSelect(p);
+                },
+              }}
+            >
+              <Tooltip>
+                {p.name} · {p.category}
+                {p.visited ? " · Visitado" : ""}
+              </Tooltip>
+            </CircleMarker>
+          ))}
         {showPoints &&
           sciencePoints.map((p, i) => (
             <CircleMarker
