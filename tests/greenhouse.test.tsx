@@ -1,114 +1,121 @@
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Greenhouse } from "@/components/Greenhouse";
 
 afterEach(cleanup);
 
-describe("inventário interativo da estufa", () => {
-  it("mostra as dezoito categorias e mantém uma biofábrica distinta das plantas", () => {
+function openCrop(name: string) {
+  fireEvent.click(screen.getByRole("button", { name: "Inspecionar " + name }));
+}
+
+describe("inventário interativo da Mars Greenhouse", () => {
+  it("exibe as 18 categorias e distingue a biofábrica das culturas vegetais", () => {
     render(<Greenhouse />);
-    expect(
-      screen.getAllByRole("button", { name: /^Selecionar / }).length,
-    ).toBe(18);
-    expect(
-      screen.getByRole("button", {
-        name: "Selecionar Biomassa microbiana comestível",
-      }),
-    ).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /^Inspecionar / })).toHaveLength(18);
+    expect(screen.getByRole("button", { name: "Inspecionar Biomassa microbiana comestível" })).toBeTruthy();
     expect(screen.getByText("BIOFÁBRICA · MICRORGANISMOS")).toBeTruthy();
   });
 
-  it("busca por nome popular e filtra culturas e biofábrica", () => {
+  it("busca por espécie, filtra culturas e encontra a biofábrica", () => {
     render(<Greenhouse />);
-    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar cultura" }), {
-      target: { value: "batata-doce" },
-    });
-    expect(
-      screen.getAllByRole("button", { name: /^Selecionar / }).length,
-    ).toBe(1);
-    expect(
-      screen.getByRole("button", { name: "Selecionar Batata-doce" }),
-    ).toBeTruthy();
-
-    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar cultura" }), {
-      target: { value: "" },
-    });
+    const search = screen.getByRole("searchbox", { name: "Buscar cultura" });
+    fireEvent.change(search, { target: { value: "Raphanus sativus" } });
+    expect(screen.getAllByRole("button", { name: /^Inspecionar / })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Inspecionar Rabanete / Cenoura / Beterraba" })).toBeTruthy();
+    fireEvent.change(search, { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Biofábrica" }));
-    expect(
-      screen.getAllByRole("button", { name: /^Selecionar / }).length,
-    ).toBe(1);
-    expect(
-      screen.getByRole("button", {
-        name: "Selecionar Biomassa microbiana comestível",
-      }),
-    ).toBeTruthy();
-
-    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar cultura" }), {
-      target: { value: "nome inexistente" },
-    });
-    expect(screen.getByText(/Nenhuma categoria encontrada/).textContent).toMatch(
-      /Nenhuma categoria encontrada/,
-    );
+    expect(screen.getAllByRole("button", { name: /^Inspecionar / })).toHaveLength(1);
+    expect(screen.getByText("BIOFÁBRICA · MICRORGANISMOS")).toBeTruthy();
+    fireEvent.change(search, { target: { value: "não existe" } });
+    expect(screen.getByText(/Nenhuma categoria encontrada/)).toBeTruthy();
   });
 
-  it("muda a ficha e troca para a ilustração de biorreator quando selecionada", () => {
+  it("abre a inspeção sem trocar de página e apresenta espécies e modelo de biorreator", () => {
     render(<Greenhouse />);
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Selecionar Biomassa microbiana comestível",
-      }),
-    );
-    expect(screen.getByText("Espécie e cepa não especificadas")).toBeTruthy();
-    expect(screen.getByRole("img", { name: /Biorreator ilustrativo/ })).toBeTruthy();
-    expect(screen.getByText(/não uma planta convencional/)).toBeTruthy();
+    openCrop("Biomassa microbiana comestível");
+    expect(screen.getByRole("heading", { name: "Biomassa microbiana comestível" })).toBeTruthy();
+    expect(screen.getByText("Rhodosporidium toruloides")).toBeTruthy();
+    expect(screen.getByText("Limnospira indica")).toBeTruthy();
+    expect(screen.getByRole("complementary", { name: "Visualização tridimensional da cultura" })).toBeTruthy();
+    expect(screen.getByText("Fotobiorreator")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Voltar ao inventário" })).toBeTruthy();
   });
 
-  it("altera giro, zoom e aparência pelos controles visuais", () => {
+  it("altera a condição ambiental e atualiza a explicação e os sintomas visuais", () => {
     render(<Greenhouse />);
-    const artwork = screen.getByRole("img", { name: /Batata/ });
-    expect(artwork.getAttribute("style")).toContain("rotateY(0deg)");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Girar cultura para a direita" }),
-    );
-    expect(artwork.getAttribute("style")).toContain("rotateY(18deg)");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Aproximar visualização" }),
-    );
-    expect(screen.getByText("115% · VISTA INTERATIVA")).toBeTruthy();
-
-    const water = screen.getByRole("group", { name: /Água disponível/ });
-    fireEvent.click(within(water).getByRole("button", { name: "Baixa" }));
-    const scene = screen
-      .getByRole("region", { name: "Visualização ilustrativa" })
-      .querySelector("[data-water]");
-    expect(scene?.getAttribute("data-water")).toBe("baixa");
-    expect(screen.getByText(/estresse hídrico ilustrativa/)).toBeTruthy();
-
-    const light = screen.getByRole("group", { name: /Exposição à luz/ });
-    fireEvent.click(within(light).getByRole("button", { name: "Baixa" }));
-    expect(scene?.getAttribute("data-light")).toBe("baixa");
-    expect(screen.getByText(/Iluminação da visualização reduzida/)).toBeTruthy();
-
-    const temperature = screen.getByRole("group", { name: "Temperatura condição ilustrativa" });
-    fireEvent.click(
-      within(temperature).getByRole("button", { name: "Quente" }),
-    );
-    expect(scene?.getAttribute("data-temperature")).toBe("quente");
-    expect(screen.getByText(/adequação da espécie não avaliada/)).toBeTruthy();
+    openCrop("Batata");
+    const water = screen.getByRole("slider", { name: "Água para Batata" });
+    expect((water as HTMLInputElement).value).toBe("30");
+    fireEvent.change(water, { target: { value: "0" } });
+    expect(screen.getByRole("heading", { name: "Baixa disponibilidade de água" })).toBeTruthy();
+    expect(screen.getAllByText(/inclina as folhas/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("Abaixo da referência")).toBeTruthy();
+    expect(screen.getByRole("slider", { name: "Água para Batata" }).getAttribute("aria-valuetext")).toContain("Abaixo da referência");
+    expect(screen.getByRole("meter", { name: "Dano ilustrativo acumulado" }).getAttribute("aria-valuenow")).toBe("0");
   });
 
-  it("identifica a ilustração 2,5D como alternativa sem WebGL ou previsão biológica", () => {
+  it("só acumula estresse ao avançar etapas, recupera gradualmente e restaura condições", () => {
     render(<Greenhouse />);
-    expect(
-      screen.getByText(/Simulação ambiental ilustrativa/),
-    ).toBeTruthy();
-    expect(screen.getByText(/ilustração 2,5D é vetorial e não anatômica/)).toBeTruthy();
-    expect(screen.getByText(/SEM PREVISÃO DE CRESCIMENTO/)).toBeTruthy();
+    openCrop("Batata");
+    fireEvent.change(screen.getByRole("slider", { name: "Água para Batata" }), { target: { value: "0" } });
+    const exposure = screen.getByRole("button", { name: /Avançar etapa de exposição/ });
+    expect(screen.getByRole("meter", { name: "Dano ilustrativo acumulado" }).getAttribute("aria-valuenow")).toBe("0");
+    fireEvent.click(exposure);
+    const meter = screen.getByRole("meter", { name: "Dano ilustrativo acumulado" });
+    expect(meter.getAttribute("aria-valuenow")).toBe("26");
+    expect(screen.getByText("estresse leve")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Restaurar condições ideais" }));
+    expect((screen.getByRole("slider", { name: "Água para Batata" }) as HTMLInputElement).value).toBe("30");
+    expect(meter.getAttribute("aria-valuenow")).toBe("26");
+    fireEvent.click(screen.getByRole("button", { name: "Avançar recuperação" }));
+    expect(meter.getAttribute("aria-valuenow")).toBe("12");
+    fireEvent.click(screen.getByRole("button", { name: "Reiniciar dano" }));
+    expect(meter.getAttribute("aria-valuenow")).toBe("0");
+  });
+
+  it("explica estresses por excesso de luz, baixa luz e temperatura extrema", () => {
+    render(<Greenhouse />);
+    openCrop("Tomate-anão");
+    const light = screen.getByRole("slider", { name: "Luz para Tomate-anão" });
+    fireEvent.change(light, { target: { value: "0" } });
+    expect(screen.getByRole("heading", { name: "Exposição à luz reduzida" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Restaurar condições ideais" }));
+    fireEvent.change(light, { target: { value: "1500" } });
+    expect(screen.getByRole("heading", { name: "Exposição à luz elevada" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Restaurar condições ideais" }));
+    fireEvent.change(screen.getByRole("slider", { name: "Temperatura para Tomate-anão" }), { target: { value: "40" } });
+    expect(screen.getByRole("heading", { name: "Temperatura acima da referência" })).toBeTruthy();
+  });
+
+  it("só apresenta o estado crítico depois de várias etapas extremas", () => {
+    render(<Greenhouse />);
+    openCrop("Batata");
+    fireEvent.change(screen.getByRole("slider", { name: "Água para Batata" }), { target: { value: "0" } });
+    const step = screen.getByRole("button", { name: /Avançar etapa de exposição/ });
+    const meter = screen.getByRole("meter", { name: "Dano ilustrativo acumulado" });
+    expect(meter.getAttribute("aria-valuenow")).toBe("0");
+    fireEvent.click(step);
+    fireEvent.click(step);
+    fireEvent.click(step);
+    expect(meter.getAttribute("aria-valuenow")).toBe("78");
+    expect(screen.getByText("estresse severo")).toBeTruthy();
+    fireEvent.click(step);
+    expect(meter.getAttribute("aria-valuenow")).toBe("100");
+    expect(screen.getByText("colapso visual")).toBeTruthy();
+  });
+
+  it("troca categoria, oferece fallback sem WebGL e identifica a simulação como ilustrativa", async () => {
+    render(<Greenhouse />);
+    openCrop("Tomate-anão");
+    expect(screen.getByRole("heading", { name: "Tomate-anão" })).toBeTruthy();
+    expect(screen.getByRole("slider", { name: "Luz para Tomate-anão" })).toBeTruthy();
+    expect(screen.getAllByText(/aproximações educativas/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Simulação ambiental ilustrativa\. Não representa um modelo biológico validado/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("MODO COMPATÍVEL")).toBeTruthy());
+    expect(screen.getByRole("group", { name: "Controles do modelo 3D" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: /fallback de Tomate-anão/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Voltar ao inventário" }));
+    openCrop("Biomassa microbiana comestível");
+    expect(screen.getByText("Fotobiorreator")).toBeTruthy();
   });
 });
