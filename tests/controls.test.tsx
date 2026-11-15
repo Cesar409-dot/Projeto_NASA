@@ -136,30 +136,19 @@ describe("Mind Space", () => {
         .getAttribute("href"),
     ).toContain("risk-of-behavioral-changes");
   });
-  it("starts, pauses and resets the clock without persisting check-in answers", () => {
+  it("starts, pauses and resets the reflection timer", () => {
     vi.useFakeTimers();
     const view = render(<MindSpace />);
-    fireEvent.click(screen.getByRole("button", { name: "Iniciar pausa" }));
+    fireEvent.click(screen.getByRole("button", { name: "Iniciar meditação" }));
     act(() => vi.advanceTimersByTime(3000));
     expect(screen.getByText("00:03")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Pausar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pausar meditação" }));
     act(() => vi.advanceTimersByTime(2000));
     expect(screen.getByText("00:03")).toBeTruthy();
     fireEvent.click(
-      screen.getByRole("button", { name: "Reiniciar cronômetro" }),
+      screen.getByRole("button", { name: "Reiniciar cronômetro de meditação" }),
     );
     expect(screen.getByText("00:00")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Curioso" }));
-    fireEvent.click(screen.getByRole("button", { name: "Concluir reflexão" }));
-    expect(screen.getByText(/Pausa reconhecida/)).toBeTruthy();
     view.unmount();
-    render(<MindSpace />);
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "Concluir reflexão",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
   });
 });

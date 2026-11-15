@@ -36,7 +36,7 @@ Os cenários da fase 2 usam [NASA: experiências de isolamento](https://www.nasa
 - [NASA — The Human Body in Space](https://www.nasa.gov/humans-in-space/the-human-body-in-space/): isolamento e atividades da tripulação.
 - [NASA — Space gardening and isolation](https://www.nasa.gov/humans-in-space/can-space-gardening-help-astronauts-cope-with-isolation/): interação com plantas e isolamento.
 
-Check-in e cronômetro são recursos demonstrativos, sem protocolo clínico, pontuação, diagnóstico ou coleta de dados.
+O cronômetro e os cenários são recursos demonstrativos. O diário guarda as entradas no armazenamento local do navegador, sem backend; não há protocolo clínico, pontuação diagnóstica ou envio de respostas a um servidor.
 
 ## Mars Greenhouse
 
@@ -47,3 +47,13 @@ As culturas ativas são alface, batata e rabanete. Referências adicionais: [exp
 - [NASA — Space Crops](https://science.nasa.gov/biological-physical/space-crops/): desafios da produção espacial.
 
 Sem extrapolação de rendimentos, necessidades ou tempos de cultivo da ISS para Marte. Os percentuais ilustrativos da fase 1 foram removidos na comparação da fase 2; não há previsão agronômica ou avaliação de saúde da planta. Cultivo humano não é evidência de vida marciana nativa.
+
+## Mind Space / Astronaut Journal
+
+O diário armazena respostas autorrelatadas no armazenamento local do navegador e limita o envio a uma vez por dia do calendário local. Esse controle é aplicado no dispositivo e não equivale a uma trava de servidor. As escalas de 1 a 5 e os gráficos são recursos de reflexão deste protótipo; não são instrumentos validados pela NASA, avaliações clínicas ou classificações de risco. O cronômetro acompanha a duração de uma meditação livre e não orienta uma técnica específica.
+
+- [NASA — Risk of Behavioral Changes and Psychiatric Disorders](https://www.nasa.gov/reference/risk-of-behavioral-changes-and-psychiatric-disorders/): descreve isolamento e confinamento prolongados como desafios que podem afetar sono, moral e tomada de decisão; a página também menciona o diário como uma opção de autocuidado explorada pela NASA.
+- [NASA — The Human Body in Space](https://www.nasa.gov/humans-in-space/the-human-body-in-space/): aborda a importância do sono, possíveis alterações do ritmo circadiano em ambientes pequenos e ruidosos, dias de Marte e fadiga associada a carga de trabalho e mudanças de horário.
+- [NASA — Isolation: What Can We Learn From the Experiences of NASA Astronauts?](https://www.nasa.gov/humans-in-space/isolation-what-can-we-learn-from-the-experiences-of-nasa-astronauts/): descreve exercício, alimentação, rotina de sono e trabalho, lazer, contato social e escrita reflexiva entre os temas de bem-estar em isolamento.
+
+Os textos educativos e sugestões do módulo são sínteses próprias dessas fontes. Não representam recomendações clínicas nem protocolos oficiais de missão.
