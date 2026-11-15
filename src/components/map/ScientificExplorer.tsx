@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useReducer, useState, useCallback } from "react";
+import { useReducer, useState, useCallback, useRef } from "react";
+import type { ViewMemory } from "@/lib/mars/map-view";
 import { Crosshair } from "lucide-react";
 import { useExplorationRecords } from "./useExplorationRecords";
 import { MarkerEditor } from "./MarkerEditor";
@@ -33,6 +34,7 @@ const TerrainMap = dynamic(() => import("./LeafletCanvas"), {
   ),
 });
 export function ScientificExplorer() {
+  const viewMemory = useRef<ViewMemory["current"]>({});
   const { records, ready, error, save } = useExplorationRecords();
   const [adding, setAdding] = useState(false);
   const [editingMarker, setEditingMarker] = useState<MarkerDraft>();
@@ -152,6 +154,7 @@ export function ScientificExplorer() {
     setScienceOpen(true);
     const point = sciencePoints.find((p) => p.id === id);
     if (point && activeLayer) showCoordinate(point.coordinate);
+    else setFocusedCoordinate(undefined);
   }
   function showRouteCoverage(missionRoute: MissionRoute) {
     const covers = (layer: (typeof nasaLayers)[number]) =>
@@ -311,6 +314,7 @@ export function ScientificExplorer() {
             previewCoordinate={markerPreview}
             routeMode={routeMode}
             terrainPlan={terrain.plan}
+            viewMemory={viewMemory}
           />
           <div className={s.mapDisplay}>
             <label className={s.layer}>

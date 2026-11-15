@@ -5,6 +5,18 @@ import {
   type LatLngBoundsExpression,
   type Map,
 } from "leaflet";
+export type ViewMemory = {
+  current: Partial<
+    Record<
+      "mola" | "image",
+      {
+        center: [number, number];
+        zoom: number;
+        request: string;
+      }
+    >
+  >;
+};
 
 /** Fill the viewport by cropping, never changing the projection or image aspect ratio. */
 export function coverageMinZoom(

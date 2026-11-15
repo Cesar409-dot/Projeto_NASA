@@ -23,6 +23,10 @@ O cálculo respeita o zoom fracionário do Leaflet e sua restrição a zoom inte
 
 ## Validação
 
+Os marcadores não mantêm rótulos permanentes. Hover mostra um tooltip compacto; apenas um fica aberto por vez. No celular, o primeiro toque mostra informações e o segundo abre o ponto ou editor. Tocar no terreno ou iniciar zoom/arraste fecha a caixa. Origem e destino compartilham o tooltip do ponto e recebem um anel visual sem interceptar cliques.
+
+As rotas usam um pane em z-index 420, acima de tiles e da imagem editorial, com contorno escuro contínuo e núcleo laranja tracejado (6 px) ou verde contínuo (7 px). Os marcadores ficam em pane separado, z-index 450; as linhas não capturam eventos. A posição e o zoom são lembrados separadamente para MOLA e Imagem oficial enquanto os pontos da rota não mudam, sem copiar coordenadas entre CRS geográfico e editorial. A rota pelo terreno permanece disponível em MOLA; não foi inventada projeção para desenhá-la na imagem sem georreferenciamento.
+
 Os testes com Leaflet real em DOM simulado exercitam MOLA e Imagem oficial em 960 × 540, 350 × 480 e 1200 × 640, nos limites mínimo/máximo e em zoom intermediário, além de resize e recentralização. A suíte também verifica o contrato WMTS, as coordenadas e a persistência de marcadores, rotas e missões.
 
 A conferência visual no Chrome foi impedida pela ferramenta Computer Use, que não conseguiu determinar a URL atual com segurança. Os testes em DOM não substituem uma inspeção visual completa no navegador.

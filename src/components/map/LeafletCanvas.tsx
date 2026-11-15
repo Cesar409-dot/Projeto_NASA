@@ -9,6 +9,7 @@ import {
   CircleMarker,
   Tooltip,
   Polyline,
+  Pane,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -19,16 +20,21 @@ import { sciencePoints, type SciencePoint } from "@/data/science-points";
 import { officialImage, tileTemplate, type NasaLayer } from "@/data/map-layers";
 import { marsLatLng } from "@/lib/mars/coordinates";
 import { marsAngularCRS } from "@/lib/mars/crs";
-import { frameCoverage } from "@/lib/mars/map-view";
+import { frameCoverage, type ViewMemory } from "@/lib/mars/map-view";
 import s from "../map.module.css";
 import type { TerrainPlan } from "@/lib/mars/terrain-routing";
 import type { RouteMode } from "./useTerrainRoute";
+import { MapPointMarker, PointTooltipControl } from "./MapPointMarker";
 const imageBounds = officialImage.bounds;
 
 function ViewControl({
   selected,
   layer,
+  viewMemory,
+  viewKey,
 }: {
+  viewMemory?: ViewMemory;
+  viewKey: string;
   selected: SciencePoint;
   layer?: NasaLayer;
 }) {
@@ -43,18 +49,45 @@ function ViewControl({
     };
   }, []);
   const previousSelected = useRef(selected.id);
+  const request = useRef(viewKey);
+  useEffect(() => {
+    request.current = viewKey;
+  }, [viewKey]);
   useEffect(() => {
     const bounds = layer?.bounds ?? imageBounds;
     const nativeMinZoom = layer ? 0 : -8;
     const maxZoom = layer?.maxNativeZoom ?? officialImage.maxZoom;
+    const base = layer ? "mola" : "image";
+    const saved = viewMemory?.current[base];
     frameCoverage(map, bounds, nativeMinZoom, maxZoom, true);
+    if (saved?.request === request.current) {
+      map.setView(
+        saved.center,
+        Math.max(map.getMinZoom(), Math.min(maxZoom, saved.zoom)),
+        { animate: false },
+      );
+      map.panInsideBounds(bounds, { animate: false });
+    }
+    const remember = () => {
+      if (!viewMemory) return;
+      const center = map.getCenter();
+      viewMemory.current[base] = {
+        center: [center.lat, center.lng],
+        zoom: map.getZoom(),
+        request: request.current,
+      };
+    };
+    map.on("moveend", remember);
     const observer = new ResizeObserver(() => {
       map.invalidateSize({ pan: false });
       frameCoverage(map, bounds, nativeMinZoom, maxZoom);
     });
     observer.observe(map.getContainer());
-    return () => observer.disconnect();
-  }, [map, layer]);
+    return () => {
+      observer.disconnect();
+      map.off("moveend", remember);
+    };
+  }, [map, layer, viewMemory]);
   useEffect(() => {
     const changedPoint = previousSelected.current !== selected.id;
     previousSelected.current = selected.id;
@@ -97,7 +130,11 @@ function MapInteraction({
   focusCoordinate,
   terrainPlan,
   routeMode,
+  viewMemory,
+  viewKey,
 }: {
+  viewMemory?: ViewMemory;
+  viewKey: string;
   terrainPlan?: TerrainPlan;
   routeMode: RouteMode;
   focusCoordinate?: MarsCoordinate;
@@ -128,6 +165,13 @@ function MapInteraction({
       });
     },
   });
+  const lastRoute = useRef<unknown[] | undefined>(undefined);
+  const lastFocus = useRef<unknown[] | undefined>(undefined);
+  const restored = useRef(false);
+  useEffect(() => {
+    restored.current =
+      viewMemory?.current[layer ? "mola" : "image"]?.request === viewKey;
+  }, [map, layer, viewMemory, viewKey]);
   useEffect(() => {
     map.getContainer().style.cursor = adding ? "crosshair" : "";
     return () => {
@@ -135,6 +179,22 @@ function MapInteraction({
     };
   }, [map, adding]);
   useEffect(() => {
+    const inputs = [
+      map,
+      layer,
+      origin,
+      destination,
+      routeFocus,
+      terrainPlan,
+      routeMode,
+    ];
+    const previous = lastRoute.current;
+    lastRoute.current = inputs;
+    if (
+      previous?.every((value, i) => value === inputs[i]) ||
+      (!previous && restored.current)
+    )
+      return;
     if (routeMode === "terrain" && !terrainPlan) return;
     if (
       !origin ||
@@ -155,6 +215,14 @@ function MapInteraction({
       });
   }, [map, layer, origin, destination, routeFocus, terrainPlan, routeMode]);
   useEffect(() => {
+    const inputs = [map, layer, focusCoordinate];
+    const previous = lastFocus.current;
+    lastFocus.current = inputs;
+    if (
+      previous?.every((value, i) => value === inputs[i]) ||
+      (!previous && restored.current)
+    )
+      return;
     if (!layer || !focusCoordinate) return;
     const [lat, lon] = marsLatLng(focusCoordinate);
     if (
@@ -191,7 +259,9 @@ export default function LeafletCanvas({
   previewCoordinate,
   routeMode = "direct",
   terrainPlan,
+  viewMemory,
 }: {
+  viewMemory?: ViewMemory;
   routeMode?: RouteMode;
   terrainPlan?: TerrainPlan;
   focusCoordinate?: MarsCoordinate;
@@ -214,6 +284,47 @@ export default function LeafletCanvas({
   const [imageError, setImageError] = useState(false);
   const [partialError, setPartialError] = useState(false);
   const tileCounts = useRef({ loaded: 0, failed: 0 });
+  const viewKey = JSON.stringify([
+    origin?.coordinate,
+    destination?.coordinate,
+    routeMode,
+    terrainPlan?.options,
+    routeFocus,
+    focusCoordinate,
+    selected.id,
+  ]);
+  const endpoints =
+    showRoute &&
+    origin &&
+    destination &&
+    (routeMode === "direct" || (layer && terrainPlan))
+      ? [origin, destination]
+      : [];
+  const position = (p: MapPoint) =>
+    layer ? marsLatLng(p.coordinate) : p.imagePosition;
+  const pointKey = (p: MapPoint) => p.id + ":" + position(p)?.join(",");
+  const roles = new Map(
+    endpoints.map((p, i) => [pointKey(p), i ? "Destino" : "Origem"]),
+  );
+  const markers = new Map<
+    string,
+    { point: MapPoint; science?: SciencePoint; personal?: PersonalMarker }
+  >();
+  if (showPoints)
+    sciencePoints.forEach((p) =>
+      markers.set(pointKey(p), { point: p, science: p }),
+    );
+  if (layer)
+    personalMarkers.forEach((p) =>
+      markers.set(pointKey(p), { point: p, personal: p }),
+    );
+  endpoints.forEach((p) => {
+    if (position(p) && !markers.has(pointKey(p)))
+      markers.set(pointKey(p), {
+        point: p,
+        science: sciencePoints.find((q) => pointKey(q) === pointKey(p)),
+      });
+  });
   const line = useMemo(
     () =>
       routeMode === "terrain"
@@ -311,7 +422,13 @@ export default function LeafletCanvas({
         zoomControl={false}
       >
         <ZoomControl zoomInTitle="Ampliar" zoomOutTitle="Reduzir" />
-        <ViewControl selected={selected} layer={layer} />
+        <ViewControl
+          selected={selected}
+          layer={layer}
+          viewMemory={viewMemory}
+          viewKey={viewKey}
+        />
+        <PointTooltipControl />
         <MapInteraction
           layer={layer}
           adding={adding}
@@ -322,6 +439,8 @@ export default function LeafletCanvas({
           focusCoordinate={focusCoordinate}
           routeMode={routeMode}
           terrainPlan={terrainPlan}
+          viewMemory={viewMemory}
+          viewKey={viewKey}
         />
         {layer ? (
           <TileLayer
@@ -349,104 +468,87 @@ export default function LeafletCanvas({
             eventHandlers={{ error: () => setImageError(true) }}
           />
         )}
-        {showRoute && line.length > 0 && (
-          <Polyline
-            positions={line}
-            smoothFactor={routeMode === "terrain" ? 0 : 1}
-            pathOptions={{
-              color: routeMode === "terrain" ? "#a5ffe0" : "#f6a578",
-              weight: routeMode === "terrain" ? 5 : 3,
-              dashArray: routeMode === "terrain" ? undefined : "7 9",
-            }}
-          />
-        )}
-        {showRoute &&
-          origin &&
-          destination &&
-          (routeMode === "direct" || !!terrainPlan) &&
-          [origin, destination].map((p, i) => {
-            const center = layer
-              ? marsLatLng(p.coordinate)
-              : routeMode === "direct"
-                ? p.imagePosition
-                : undefined;
-            return center ? (
-              <CircleMarker
-                key={"endpoint-" + i}
-                center={center}
-                radius={10}
+        <Pane name="mars-routes" style={{ zIndex: 420, pointerEvents: "none" }}>
+          {showRoute && line.length > 0 && (
+            <>
+              <Polyline
+                positions={line}
+                interactive={false}
+                smoothFactor={routeMode === "terrain" ? 0 : 1}
                 pathOptions={{
-                  color: i ? "#8ed9ff" : "#a5ffe0",
-                  fillOpacity: 0,
-                  weight: 3,
+                  color: "#101719",
+                  weight: routeMode === "terrain" ? 11 : 10,
+                  opacity: 1,
+                  lineCap: "round",
+                  lineJoin: "round",
                 }}
-              >
-                <Tooltip permanent direction={i ? "bottom" : "top"}>
-                  {i ? "Destino: " : "Origem: "}
-                  {p.name}
-                </Tooltip>
-              </CircleMarker>
+              />
+              <Polyline
+                positions={line}
+                interactive={false}
+                smoothFactor={routeMode === "terrain" ? 0 : 1}
+                pathOptions={{
+                  color: routeMode === "terrain" ? "#a5ffe0" : "#ffae66",
+                  weight: routeMode === "terrain" ? 7 : 6,
+                  opacity: 1,
+                  dashArray: routeMode === "terrain" ? undefined : "12 9",
+                  lineCap: "round",
+                  lineJoin: "round",
+                }}
+              />
+            </>
+          )}
+        </Pane>
+        <Pane name="mars-points" style={{ zIndex: 450 }}>
+          {layer && previewCoordinate && (
+            <CircleMarker
+              center={marsLatLng(previewCoordinate)}
+              radius={12}
+              pathOptions={{
+                color: "#ffb38b",
+                fillColor: "#ffb38b",
+                fillOpacity: 0.25,
+                weight: 3,
+                dashArray: "4 4",
+              }}
+            >
+              <Tooltip className={s.pointTooltip}>
+                Prévia · posição ainda não salva
+              </Tooltip>
+            </CircleMarker>
+          )}
+          {[...markers].map(([key, { point: p, science, personal }]) => {
+            const center = position(p);
+            return center ? (
+              <MapPointMarker
+                key={key}
+                position={center}
+                name={p.name}
+                role={roles.get(key)}
+                info={
+                  personal
+                    ? personal.category +
+                      (personal.visited ? " · Visitado" : "")
+                    : science
+                      ? science.kind +
+                        (layer ? " · centro aproximado" : " · esquema")
+                      : "Extremo da missão salva"
+                }
+                selected={science?.id === selected.id}
+                personal={!!personal}
+                visited={personal?.visited}
+                adding={adding}
+                onActivate={
+                  personal
+                    ? () => onMarkerSelect(personal)
+                    : science
+                      ? () => onSelect(science.id)
+                      : undefined
+                }
+              />
             ) : null;
           })}
-        {layer && previewCoordinate && (
-          <CircleMarker
-            center={marsLatLng(previewCoordinate)}
-            radius={12}
-            pathOptions={{
-              color: "#ffb38b",
-              fillColor: "#ffb38b",
-              fillOpacity: 0.25,
-              weight: 3,
-              dashArray: "4 4",
-            }}
-          >
-            <Tooltip permanent>Prévia · posição ainda não salva</Tooltip>
-          </CircleMarker>
-        )}
-        {layer &&
-          personalMarkers.map((p) => (
-            <CircleMarker
-              key={p.id}
-              center={marsLatLng(p.coordinate)}
-              radius={8}
-              pathOptions={{
-                color: p.visited ? "#a5ffe0" : "#8ed9ff",
-                fillColor: "#2685b4",
-                fillOpacity: 1,
-                weight: 3,
-              }}
-              eventHandlers={{
-                click: () => {
-                  if (!adding) onMarkerSelect(p);
-                },
-              }}
-            >
-              <Tooltip>
-                {p.name} · {p.category}
-                {p.visited ? " · Visitado" : ""}
-              </Tooltip>
-            </CircleMarker>
-          ))}
-        {showPoints &&
-          sciencePoints.map((p, i) => (
-            <CircleMarker
-              key={p.id}
-              center={layer ? marsLatLng(p.coordinate) : p.imagePosition}
-              radius={selected.id === p.id ? 10 : 7}
-              pathOptions={{
-                color: selected.id === p.id ? "#ffb38b" : "#efeee7",
-                fillColor: "#f47b50",
-                fillOpacity: 1,
-                weight: 2,
-              }}
-              eventHandlers={{ click: () => onSelect(p.id) }}
-            >
-              <Tooltip direction="top" permanent={selected.id === p.id}>
-                0{i + 1} / {p.name}
-                {!layer ? " · esquema" : " · centro aproximado"}
-              </Tooltip>
-            </CircleMarker>
-          ))}
+        </Pane>
       </MapContainer>
     </div>
   );
