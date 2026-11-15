@@ -3,6 +3,7 @@ import {
   surfaceDistanceMetres,
   greatCircleLine,
   type MarsCoordinate,
+  eastLongitude180,
 } from "./coordinates";
 export const markerCategories = [
   "Exploração",
@@ -168,4 +169,34 @@ export function mapCoordinateLabel(coordinate: MarsCoordinate): string {
     longitude.toFixed(5) +
     "° E"
   );
+}
+
+export type MarkerDraft = Omit<PersonalMarker, "coordinate"> & {
+  coordinate?: MarsCoordinate;
+};
+export function manualCoordinate(
+  latitude: string,
+  longitude: string,
+): MarsCoordinate | undefined {
+  const decimal = (value: string) =>
+    /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(value.trim())
+      ? Number(value.trim().replace(",", "."))
+      : NaN;
+  const lat = decimal(latitude),
+    lon = decimal(longitude);
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    Math.abs(lat) > 90 ||
+    lon < -180 ||
+    lon > 360
+  )
+    return undefined;
+  return {
+    body: "Mars",
+    latitudeType: "planetocentric",
+    longitudeDirection: "east",
+    latitude: lat,
+    longitude: eastLongitude180(lon),
+  };
 }

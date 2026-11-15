@@ -17,9 +17,9 @@ export function LayerPanel({
 }) {
   return (
     <section aria-label="Camadas cartográficas">
-      <h3>Camadas do atlas</h3>
+      <h3>Bases cartográficas</h3>
       <fieldset className={s.layerSet}>
-        <legend className={u.label}>BASE CARTOGRÁFICA</legend>
+        <legend className={u.label}>ESCOLHA A VISUALIZAÇÃO</legend>
         {nasaLayers.map((layer) => (
           <label className={s.layerOption} key={layer.id}>
             <input
@@ -33,7 +33,7 @@ export function LayerPanel({
               {layer.name}
               <small>
                 {health[layer.id]?.state === "ready"
-                  ? "Disponível · MRO"
+                  ? "Disponível"
                   : health[layer.id]?.state === "error"
                     ? "Indisponível nesta sessão"
                     : "Verificando serviço…"}
@@ -73,7 +73,7 @@ export function LayerPanel({
             <p>{layer.mission}</p>
             <p>{layer.legend}</p>
             <a href={layer.source} target="_blank" rel="noreferrer">
-              Produto e autoria USGS
+              Produto e autoria
             </a>{" "}
             ·{" "}
             <a href={capabilitiesUrl(layer)} target="_blank" rel="noreferrer">
@@ -82,8 +82,9 @@ export function LayerPanel({
           </div>
         ))}
         <p>
-          ● Laranja: centro catalogado selecionado. ● Claro: outro centro. Linha
-          laranja: arco geométrico; na imagem local, conexão apenas esquemática.
+          Laranja: locais catalogados. Azul: marcadores próprios. Linha verde:
+          missão selecionada. A linha representa um arco geométrico; na imagem
+          local, é apenas esquemática.
         </p>
       </details>
     </section>

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { CRS, DomEvent, type LatLngBoundsExpression } from "leaflet";
+import { CRS, DomEvent, point, type LatLngBoundsExpression } from "leaflet";
 import {
   MapContainer,
   TileLayer,
@@ -42,23 +42,47 @@ function ViewControl({
       DomEvent.off(button);
     };
   }, []);
+  const previousSelected = useRef<string | undefined>(undefined);
   useEffect(() => {
+    const changedPoint = previousSelected.current !== selected.id;
+    previousSelected.current = selected.id;
     if (!layer) {
       map.panTo(selected.imagePosition, { animate: false });
       return;
     }
-    const [lat, lon] = marsLatLng(selected.coordinate);
-    const inside =
+    const minZoom =
+      layer.id === "mola"
+        ? 1
+        : Math.min(
+            layer.maxNativeZoom,
+            Math.max(1, map.getBoundsZoom(layer.bounds, false, point(32, 32))),
+          );
+    map.setMaxZoom(layer.maxNativeZoom);
+    map.setMinZoom(minZoom);
+    map.setMaxBounds(layer.bounds);
+    const inside = (lat: number, lon: number) =>
       lat >= layer.bounds[0][0] &&
       lat <= layer.bounds[1][0] &&
       lon >= layer.bounds[0][1] &&
       lon <= layer.bounds[1][1];
-    if (inside && layer.id === "mola") map.setView([lat, lon], 7);
-    else if (inside)
-      map.panTo([lat, lon], {
-        animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    const [lat, lon] = marsLatLng(selected.coordinate);
+    const current = map.getCenter();
+    const zoom = Math.max(
+      minZoom,
+      Math.min(layer.maxNativeZoom, map.getZoom()),
+    );
+    if (changedPoint && inside(lat, lon))
+      map.setView([lat, lon], layer.id === "mola" && zoom < 7 ? 7 : zoom, {
+        animate: false,
       });
-    else map.fitBounds(layer.bounds);
+    else if (inside(current.lat, current.lng))
+      map.setView(current, zoom, { animate: false });
+    else
+      map.fitBounds(layer.bounds, {
+        padding: [16, 16],
+        maxZoom: layer.maxNativeZoom,
+        animate: false,
+      });
   }, [map, selected, layer]);
   useEffect(() => {
     const observer = new ResizeObserver(() => map.invalidateSize());
@@ -88,7 +112,9 @@ function MapInteraction({
   origin,
   destination,
   routeFocus,
+  focusCoordinate,
 }: {
+  focusCoordinate?: MarsCoordinate;
   layer?: NasaLayer;
   adding: boolean;
   onPosition: (p: MarsCoordinate) => void;
@@ -123,7 +149,12 @@ function MapInteraction({
     };
   }, [map, adding]);
   useEffect(() => {
-    if (!routeFocus || !origin || !destination) return;
+    if (
+      !origin ||
+      !destination ||
+      routeDistance({ origin, destination }) === null
+    )
+      return;
     if (layer)
       map.fitBounds(
         [marsLatLng(origin.coordinate), marsLatLng(destination.coordinate)],
@@ -134,6 +165,22 @@ function MapInteraction({
         padding: [50, 50],
       });
   }, [map, layer, origin, destination, routeFocus]);
+  useEffect(() => {
+    if (!layer || !focusCoordinate) return;
+    const [lat, lon] = marsLatLng(focusCoordinate);
+    if (
+      lat < layer.bounds[0][0] ||
+      lat > layer.bounds[1][0] ||
+      lon < layer.bounds[0][1] ||
+      lon > layer.bounds[1][1]
+    )
+      return;
+    map.setView(
+      [lat, lon],
+      Math.min(layer.maxNativeZoom, Math.max(map.getMinZoom(), map.getZoom())),
+      { animate: false },
+    );
+  }, [map, layer, focusCoordinate]);
   return null;
 }
 
@@ -151,7 +198,11 @@ export default function LeafletCanvas({
   adding = false,
   onPosition = () => {},
   routeFocus,
+  focusCoordinate,
+  previewCoordinate,
 }: {
+  focusCoordinate?: MarsCoordinate;
+  previewCoordinate?: MarsCoordinate;
   layer?: NasaLayer;
   selected: SciencePoint;
   onSelect: (id: string) => void;
@@ -258,7 +309,7 @@ export default function LeafletCanvas({
         minZoom={layer ? 1 : -2}
         maxBounds={layer?.bounds ?? imageBounds}
         maxBoundsViscosity={0.8}
-        maxZoom={layer ? layer.maxNativeZoom + 2 : 2}
+        maxZoom={layer ? layer.maxNativeZoom : 2}
         scrollWheelZoom={true}
         attributionControl={true}
         zoomControl={false}
@@ -272,15 +323,17 @@ export default function LeafletCanvas({
           origin={origin}
           destination={destination}
           routeFocus={routeFocus}
+          focusCoordinate={focusCoordinate}
         />
         {layer ? (
           <TileLayer
+            key={layer.id}
             url={tileTemplate(layer)}
             tileSize={256}
             noWrap={true}
             tms={false}
             maxNativeZoom={layer.maxNativeZoom}
-            maxZoom={layer.maxNativeZoom + 2}
+            maxZoom={layer.maxNativeZoom}
             bounds={layer.bounds}
             detectRetina={false}
             keepBuffer={1}
@@ -305,6 +358,21 @@ export default function LeafletCanvas({
               dashArray: "7 9",
             }}
           />
+        )}
+        {layer && previewCoordinate && (
+          <CircleMarker
+            center={marsLatLng(previewCoordinate)}
+            radius={12}
+            pathOptions={{
+              color: "#ffb38b",
+              fillColor: "#ffb38b",
+              fillOpacity: 0.25,
+              weight: 3,
+              dashArray: "4 4",
+            }}
+          >
+            <Tooltip permanent>Prévia · posição ainda não salva</Tooltip>
+          </CircleMarker>
         )}
         {layer &&
           personalMarkers.map((p) => (

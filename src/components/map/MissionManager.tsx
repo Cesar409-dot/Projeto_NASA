@@ -215,12 +215,17 @@ export function MissionManager({
             <div className={s.actions}>
               <button
                 className={u.choice}
+                aria-label={"Editar missão " + m.name}
                 onClick={() => setEditing(structuredClone(m))}
               >
-                Editar missão {m.name}
+                Editar
               </button>
-              <button className={u.choice} onClick={() => onDelete(m.id)}>
-                Excluir missão {m.name}
+              <button
+                className={u.choice}
+                aria-label={"Excluir missão " + m.name}
+                onClick={() => onDelete(m.id)}
+              >
+                Excluir
               </button>
             </div>
           </article>
