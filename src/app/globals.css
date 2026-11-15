@@ -213,3 +213,21 @@ footer i {
     font-size: 64px;
   }
 }
+select,
+option {
+  color: var(--text);
+  background: var(--bg);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+.leaflet-tooltip {
+  white-space: normal !important;
+  max-width: 210px;
+}
