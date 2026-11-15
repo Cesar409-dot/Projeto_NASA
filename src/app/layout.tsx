@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { SiteLanguageProvider } from "@/components/SiteLanguageProvider";
 export const metadata: Metadata = {
   title: {
     default: "Mars Survival Guide — A próxima fronteira",
@@ -16,17 +17,19 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body>
-        <a className="skip" href="#main">
-          Pular para o conteúdo
-        </a>
-        <Header />
-        {children}
-        <footer>
-          <span>
-            MARS SURVIVAL GUIDE <i> / </i> EXPLORAR É HUMANO.
-          </span>
-          <span>Protótipo educativo independente · Sem endosso da NASA</span>
-        </footer>
+        <SiteLanguageProvider>
+          <a className="skip" href="#main">
+            Pular para o conteúdo
+          </a>
+          <Header />
+          {children}
+          <footer>
+            <span>
+              MARS SURVIVAL GUIDE <i> / </i> EXPLORAR É HUMANO.
+            </span>
+            <span>Protótipo educativo independente · Sem endosso da NASA</span>
+          </footer>
+        </SiteLanguageProvider>
       </body>
     </html>
   );

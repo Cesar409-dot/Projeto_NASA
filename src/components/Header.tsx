@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Orbit, ArrowUpRight } from "lucide-react";
+import { useSiteLanguage } from "./SiteLanguageProvider";
 export function Header() {
   const path = usePathname();
   const isMarsMapsSection = path.startsWith("/mars-maps");
+  const { language, setLanguage } = useSiteLanguage();
   return (
     <header className="header">
       <Link
@@ -32,9 +34,15 @@ export function Header() {
           </Link>
         ))}
       </nav>
-      <Link className="headerLink" href="/mars-maps">
-        Iniciar exploração <ArrowUpRight size={16} />
-      </Link>
+      <div className="headerActions">
+        <Link className="headerLink" href="/mars-maps">
+          Iniciar exploração <ArrowUpRight size={16} />
+        </Link>
+        <div className="siteLanguageSwitch" role="group" aria-label="Idioma do site">
+          <button type="button" lang="pt-BR" aria-pressed={language === "pt"} data-active={language === "pt"} data-language-ignore onClick={() => setLanguage("pt")}>PT</button>
+          <button type="button" lang="en" aria-pressed={language === "en"} data-active={language === "en"} data-language-ignore onClick={() => setLanguage("en")}>EN</button>
+        </div>
+      </div>
     </header>
   );
 }

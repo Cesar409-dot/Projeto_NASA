@@ -144,6 +144,31 @@ svg {
   align-items: center;
   gap: 12px;
 }
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.siteLanguageSwitch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+}
+.siteLanguageSwitch button {
+  min-width: 34px;
+  padding: 5px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
+}
+.siteLanguageSwitch button[data-active="true"] {
+  background: var(--panel);
+  color: var(--accent);
+}
 footer {
   margin: 0 5%;
   padding: 30px 0;
@@ -208,6 +233,10 @@ footer i {
   }
   .headerLink {
     display: none;
+  }
+  .headerActions {
+    order: 2;
+    gap: 8px;
   }
   footer {
     flex-direction: column;
