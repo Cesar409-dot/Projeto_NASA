@@ -51,7 +51,7 @@
   min-width: 0;
 }
 .map {
-  height: 490px;
+  height: clamp(560px, 72vh, 900px);
   width: 100%;
   z-index: 0;
 }
@@ -314,7 +314,7 @@
     border-bottom: 1px solid var(--line);
   }
   .map {
-    height: 360px;
+    height: 520px;
   }
   .mapTop {
     gap: 12px;

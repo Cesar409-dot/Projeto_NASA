@@ -1,5 +1,6 @@
 export type NasaLayer = {
-  id: "ctx" | "hirise";
+  id: "ctx" | "hirise" | "ctx-regional" | "mola";
+  format?: "png" | "jpg";
   name: string;
   product: string;
   mission: string;
@@ -10,6 +11,22 @@ export type NasaLayer = {
   legend: string;
 };
 export const nasaLayers: NasaLayer[] = [
+  {
+    id: "ctx-regional", name: "CTX · Entorno de Jezero (preliminar)",
+    product: "Jezero_CTX_BlockAdj_dd", mission: "Mars Reconnaissance Orbiter · CTX",
+    maxNativeZoom: 12, bounds: [[15.9058484, 75.1537692], [19.4453003, 78.8717121]],
+    source: "https://trek.nasa.gov/tiles/Mars/EQ/Jezero_CTX_BlockAdj_dd/1.0.0/WMTSCapabilities.xml",
+    credit: "CTX/MRO · NASA/JPL-Caltech/MSSS · distribuição NASA Mars Trek",
+    legend: "Mosaico preliminar regional. Tons de cinza mostram a superfície; não medem elevação. Registro entre produtos não validado para navegação operacional.",
+  },
+  {
+    id: "mola", name: "MOLA · Relevo global",
+    product: "Mars_MGS_MOLA_ClrShade_merge_global_463m", mission: "Mars Global Surveyor · MOLA",
+    maxNativeZoom: 7, format: "jpg", bounds: [[-89.9991635, -180], [90, 179.9983271]],
+    source: "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/WMTSCapabilities.xml",
+    credit: "MGS/MOLA · NASA/GSFC · distribuição NASA Mars Trek",
+    legend: "Relevo sombreado colorido derivado de altimetria MOLA, produto nominal de 463 m. Visualização qualitativa: sem leitura de altitude, declividade ou segurança. Ampliar não acrescenta resolução.",
+  },
   {
     id: "ctx",
     name: "CTX · Jezero controlado",
@@ -46,9 +63,9 @@ export const nasaEndpoint = (layer: NasaLayer) =>
 export const capabilitiesUrl = (layer: NasaLayer) =>
   `${nasaEndpoint(layer)}/WMTSCapabilities.xml`;
 export const tileTemplate = (layer: NasaLayer) =>
-  `${nasaEndpoint(layer)}/default/default028mm/{z}/{y}/{x}.png`;
+  `${nasaEndpoint(layer)}/default/default028mm/{z}/{y}/{x}.${layer.format ?? "png"}`;
 export const sampleTileUrl = (layer: NasaLayer) =>
   tileTemplate(layer)
-    .replace("{z}", "12")
-    .replace("{y}", "1628")
-    .replace("{x}", "5858");
+    .replace("{z}", layer.id === "mola" · "0" : "12")
+    .replace("{y}", layer.id === "mola" · "0" : "1628")
+    .replace("{x}", layer.id === "mola" · "1" : "5858");

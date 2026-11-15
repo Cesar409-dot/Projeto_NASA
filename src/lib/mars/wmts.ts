@@ -35,7 +35,7 @@ export function validateWmts(xml: string, layer: NasaLayer): void {
   if (crs !== "urn:ogc:def:crs:EPSG::104905")
     throw new Error("O CRS anunciado mudou; revisar a camada");
   if (
-    !descendants(product, "Format").some((n) => n.textContent === "image/png")
+    !descendants(product, "Format").some((n) => n.textContent === (layer.format === "jpg" ? "image/jpeg" : "image/png"))
   )
     throw new Error("Formato de imagem não suportado");
   const matrices = descendants(set, "TileMatrix");
@@ -110,14 +110,14 @@ export async function probeLayer(
   });
   if (!tile.ok)
     throw new Error(`Tile de verificação indisponível (HTTP ${tile.status})`);
-  const bytes = new Uint8Array(await tile.arrayBuffer());
-  if (![137, 80, 78, 71, 13, 10, 26, 10].every((b, i) => bytes[i] === b))
-    throw new Error("Resposta de tile não é um PNG");
-  const view = new DataView(bytes.buffer);
-  if (
-    bytes.length < 24 ||
-    view.getUint32(16) !== 256 ||
-    view.getUint32(20) !== 256
-  )
-    throw new Error("Dimensões inesperadas do tile");
+  const blob = await tile.blob();
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const signature = layer.format === "jpg"
+    ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+    : [137, 80, 78, 71, 13, 10, 26, 10].every((b, i) => bytes[i] === b);
+  if (!signature) throw new Error("Formato inesperado do tile");
+  const bitmap = await createImageBitmap(blob);
+  const validSize = bitmap.width === 256 && bitmap.height === 256;
+  bitmap.close();
+  if (!validSize) throw new Error("Dimensões inesperadas do tile");
 }

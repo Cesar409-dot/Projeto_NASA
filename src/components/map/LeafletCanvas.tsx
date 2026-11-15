@@ -39,7 +39,8 @@ function ViewControl({
       lat <= layer.bounds[1][0] &&
       lon >= layer.bounds[0][1] &&
       lon <= layer.bounds[1][1];
-    if (inside)
+    if (inside && layer.id === "mola") map.setView([lat, lon], 7);
+    else if (inside)
       map.panTo([lat, lon], {
         animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
       });
@@ -128,7 +129,7 @@ export default function LeafletCanvas({
       )}
       {outside && (
         <span className={s.coverageNotice} role="status">
-          Local fora da cobertura HiRISE. Selecione CTX para contexto.
+          Local fora desta cobertura. Selecione CTX regional ou MOLA para contexto.
         </span>
       )}
       {imageError && (
@@ -141,9 +142,11 @@ export default function LeafletCanvas({
         className={s.map}
         crs={layer ? marsAngularCRS : CRS.Simple}
         bounds={layer?.bounds ?? imageBounds}
-        minZoom={layer ? 9 : -2}
-        maxZoom={layer?.maxNativeZoom ?? 2}
-        scrollWheelZoom={false}
+        minZoom={layer ? 1 : -2}
+        maxBounds={layer?.bounds ?? imageBounds}
+        maxBoundsViscosity={0.8}
+        maxZoom={layer ? layer.maxNativeZoom + 2 : 2}
+        scrollWheelZoom={true}
         attributionControl={true}
       >
         <ViewControl selected={selected} layer={layer} />
@@ -154,7 +157,7 @@ export default function LeafletCanvas({
             noWrap={true}
             tms={false}
             maxNativeZoom={layer.maxNativeZoom}
-            maxZoom={layer.maxNativeZoom}
+            maxZoom={layer.maxNativeZoom + 2}
             bounds={layer.bounds}
             detectRetina={false}
             keepBuffer={1}
