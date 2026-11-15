@@ -27,6 +27,9 @@ Não requer conta, chave, banco de dados, arquivo `.env` ou recurso pago.
 
 - `/`: apresentação, ilustração artística de Marte e acesso às três frentes.
 - `/mars-maps`: MOLA — Relevo global (NASA/WMTS verificado) e Imagem oficial (recorte de Jezero sem georreferenciamento), enquadramento responsivo com zoom limitado à resolução disponível, três centros científicos selecionáveis, marcadores próprios, origem/destino, arco e distância geométrica marciana, inversão/limpeza e missões persistentes. Veja [configuração cartográfica atual](docs/MAP_DISPLAY.md).
+
+O planejador também compara a rota direta com uma [rota experimental pelo terreno de Jezero](docs/TERRAIN_ROUTING.md), calculada por A* em um recorte local de DEM CTX/USGS. Inclinações são estimadas e não garantem trânsito seguro.
+
 - `/mind-space`: check-in e cronômetro preservados; três cenários interativos sobre isolamento, comunicação e convivência sob pressão. Nenhuma resposta é persistida ou transmitida.
 - `/mars-greenhouse`: seleção e comparação qualitativa de alface, batata e rabanete; água, luz, nutrientes, ambiente e limitações, com fontes e estrutura para revisão de Química.
 - Página 404 com retorno ao início.

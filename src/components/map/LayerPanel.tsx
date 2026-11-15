@@ -90,9 +90,9 @@ export function LayerPanel({
           </div>
         ))}
         <p>
-          Laranja: locais catalogados. Azul: marcadores próprios. Linha verde:
-          missão selecionada. A linha representa um arco geométrico; na imagem
-          local, é apenas esquemática.
+          Laranja: locais catalogados. Azul: marcadores próprios. Linha laranja
+          tracejada: rota direta. Linha verde contínua: rota pelo terreno. Na
+          imagem local, somente a conexão direta esquemática é exibida.
         </p>
       </details>
     </section>

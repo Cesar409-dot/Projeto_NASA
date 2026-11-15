@@ -11,6 +11,8 @@ import {
 import { MapDialog } from "./MapDialog";
 import u from "../ui.module.css";
 import s from "../map.module.css";
+import { TerrainRouteInfo } from "./TerrainRouteInfo";
+import { terrainNotice } from "@/data/terrain-model";
 type MissionDraft = Omit<SavedMission, "route"> & { route?: MissionRoute };
 function MissionEditor({
   mission,
@@ -119,8 +121,9 @@ function MissionEditor({
           </button>
         )}
         <p className={s.small}>
-          Estimativa geométrica em Marte, sem relevo ou obstáculos. A linha não
-          indica um trajeto operacionalmente seguro.
+          {draft.route?.terrain
+            ? terrainNotice
+            : "Rota direta: estimativa geométrica em Marte, sem relevo ou obstáculos. A linha não indica um trajeto operacionalmente seguro."}
         </p>
         <button
           className={u.choice}
@@ -202,10 +205,19 @@ export function MissionManager({
               Destino: {m.route.destination.name}
               <br />
               Distância estimada: {distanceLabel(m.route)}
+              <br />
+              Modalidade:{" "}
+              {m.route.terrain ? "Rota pelo terreno" : "Rota direta"}
             </p>
             <details>
               <summary>Visualizar detalhes</summary>
               <p>{m.description || "Sem descrição."}</p>
+              {m.route.terrain && (
+                <TerrainRouteInfo
+                  plan={m.route.terrain}
+                  directDistance={routeDistance(m.route)!}
+                />
+              )}
               <p className={s.small}>
                 Origem: {mapCoordinateLabel(m.route.origin.coordinate)}.
                 <br />

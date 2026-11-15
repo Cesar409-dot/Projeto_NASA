@@ -21,6 +21,8 @@ import { marsLatLng } from "@/lib/mars/coordinates";
 import { marsAngularCRS } from "@/lib/mars/crs";
 import { frameCoverage } from "@/lib/mars/map-view";
 import s from "../map.module.css";
+import type { TerrainPlan } from "@/lib/mars/terrain-routing";
+import type { RouteMode } from "./useTerrainRoute";
 const imageBounds = officialImage.bounds;
 
 function ViewControl({
@@ -93,7 +95,11 @@ function MapInteraction({
   destination,
   routeFocus,
   focusCoordinate,
+  terrainPlan,
+  routeMode,
 }: {
+  terrainPlan?: TerrainPlan;
+  routeMode: RouteMode;
   focusCoordinate?: MarsCoordinate;
   layer?: NasaLayer;
   adding: boolean;
@@ -129,6 +135,7 @@ function MapInteraction({
     };
   }, [map, adding]);
   useEffect(() => {
+    if (routeMode === "terrain" && !terrainPlan) return;
     if (
       !origin ||
       !destination ||
@@ -137,14 +144,16 @@ function MapInteraction({
       return;
     if (layer)
       map.fitBounds(
-        [marsLatLng(origin.coordinate), marsLatLng(destination.coordinate)],
+        routeMode === "terrain" && terrainPlan
+          ? terrainPlan.path
+          : [marsLatLng(origin.coordinate), marsLatLng(destination.coordinate)],
         { padding: [50, 50], maxZoom: layer.maxNativeZoom },
       );
     else if (origin.imagePosition && destination.imagePosition)
       map.fitBounds([origin.imagePosition, destination.imagePosition], {
         padding: [50, 50],
       });
-  }, [map, layer, origin, destination, routeFocus]);
+  }, [map, layer, origin, destination, routeFocus, terrainPlan, routeMode]);
   useEffect(() => {
     if (!layer || !focusCoordinate) return;
     const [lat, lon] = marsLatLng(focusCoordinate);
@@ -180,7 +189,11 @@ export default function LeafletCanvas({
   routeFocus,
   focusCoordinate,
   previewCoordinate,
+  routeMode = "direct",
+  terrainPlan,
 }: {
+  routeMode?: RouteMode;
+  terrainPlan?: TerrainPlan;
   focusCoordinate?: MarsCoordinate;
   previewCoordinate?: MarsCoordinate;
   layer?: NasaLayer;
@@ -203,14 +216,20 @@ export default function LeafletCanvas({
   const tileCounts = useRef({ loaded: 0, failed: 0 });
   const line = useMemo(
     () =>
-      origin && destination && routeDistance({ origin, destination }) !== null
-        ? layer
-          ? routeSegments({ origin, destination })
-          : origin.imagePosition && destination.imagePosition
-            ? [[origin.imagePosition, destination.imagePosition]]
-            : []
-        : [],
-    [origin, destination, layer],
+      routeMode === "terrain"
+        ? layer && terrainPlan
+          ? [terrainPlan.path]
+          : []
+        : origin &&
+            destination &&
+            routeDistance({ origin, destination }) !== null
+          ? layer
+            ? routeSegments({ origin, destination })
+            : origin.imagePosition && destination.imagePosition
+              ? [[origin.imagePosition, destination.imagePosition]]
+              : []
+          : [],
+    [origin, destination, layer, routeMode, terrainPlan],
   );
   const tileEvents = useMemo(
     () => ({
@@ -250,6 +269,12 @@ export default function LeafletCanvas({
         <p className={s.mapAlert}>
           Imagem oficial: recorte de Jezero, sem cobertura global ou
           georreferenciamento. Pontos e conexões são esquemáticos.
+        </p>
+      )}
+      {!layer && routeMode === "terrain" && (
+        <p className={s.mapAlert} role="status">
+          O trajeto pelo terreno não pode ser projetado na imagem sem
+          georreferenciamento. Selecione MOLA para visualizá-lo.
         </p>
       )}
       {partialError && (
@@ -295,6 +320,8 @@ export default function LeafletCanvas({
           destination={destination}
           routeFocus={routeFocus}
           focusCoordinate={focusCoordinate}
+          routeMode={routeMode}
+          terrainPlan={terrainPlan}
         />
         {layer ? (
           <TileLayer
@@ -325,13 +352,42 @@ export default function LeafletCanvas({
         {showRoute && line.length > 0 && (
           <Polyline
             positions={line}
+            smoothFactor={routeMode === "terrain" ? 0 : 1}
             pathOptions={{
-              color: routeFocus ? "#a5ffe0" : "#f6a578",
-              weight: routeFocus ? 5 : 3,
-              dashArray: "7 9",
+              color: routeMode === "terrain" ? "#a5ffe0" : "#f6a578",
+              weight: routeMode === "terrain" ? 5 : 3,
+              dashArray: routeMode === "terrain" ? undefined : "7 9",
             }}
           />
         )}
+        {showRoute &&
+          origin &&
+          destination &&
+          (routeMode === "direct" || !!terrainPlan) &&
+          [origin, destination].map((p, i) => {
+            const center = layer
+              ? marsLatLng(p.coordinate)
+              : routeMode === "direct"
+                ? p.imagePosition
+                : undefined;
+            return center ? (
+              <CircleMarker
+                key={"endpoint-" + i}
+                center={center}
+                radius={10}
+                pathOptions={{
+                  color: i ? "#8ed9ff" : "#a5ffe0",
+                  fillOpacity: 0,
+                  weight: 3,
+                }}
+              >
+                <Tooltip permanent direction={i ? "bottom" : "top"}>
+                  {i ? "Destino: " : "Origem: "}
+                  {p.name}
+                </Tooltip>
+              </CircleMarker>
+            ) : null;
+          })}
         {layer && previewCoordinate && (
           <CircleMarker
             center={marsLatLng(previewCoordinate)}

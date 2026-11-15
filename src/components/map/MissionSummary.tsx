@@ -2,13 +2,17 @@ import type { MapPoint } from "@/lib/mars/exploration";
 import { surfaceDistanceMetres } from "@/lib/mars/coordinates";
 import u from "../ui.module.css";
 import s from "../map.module.css";
+import type { TerrainPlan } from "@/lib/mars/terrain-routing";
+import { TerrainRouteInfo } from "./TerrainRouteInfo";
 
 export function MissionSummary({
   selected,
   origin,
   destination,
   isLocal,
+  terrainPlan,
 }: {
+  terrainPlan?: TerrainPlan;
   selected: MapPoint;
   origin?: MapPoint;
   destination?: MapPoint;
@@ -50,6 +54,9 @@ export function MissionSummary({
           </dd>
         </div>
       </dl>
+      {terrainPlan && distance !== null && (
+        <TerrainRouteInfo plan={terrainPlan} directDistance={distance} />
+      )}
       <h3>Objetivos científicos</h3>
       {origin || destination ? (
         <ul>

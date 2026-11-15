@@ -5,6 +5,8 @@ import { Crosshair } from "lucide-react";
 import { useExplorationRecords } from "./useExplorationRecords";
 import { MarkerEditor } from "./MarkerEditor";
 import { MissionManager } from "./MissionManager";
+import { useTerrainRoute, type RouteMode } from "./useTerrainRoute";
+import { defaultTerrainOptions } from "@/lib/mars/terrain-routing";
 import {
   mapCoordinateLabel,
   routeDistance,
@@ -45,6 +47,8 @@ export function ScientificExplorer() {
   const [showPoints, setShowPoints] = useState(true),
     [showRoute, setShowRoute] = useState(true);
   const [route, dispatch] = useReducer(routeReducer, emptyRoute);
+  const [routeMode, setRouteMode] = useState<RouteMode>("direct");
+  const [terrainOptions, setTerrainOptions] = useState(defaultTerrainOptions);
   const { health, fail, retry } = useLayerHealth();
   const selected = sciencePoints.find((p) => p.id === selectedId)!;
   const points = [...sciencePoints, ...records.markers];
@@ -54,6 +58,15 @@ export function ScientificExplorer() {
     origin && destination ? { origin, destination } : undefined;
   const displayedRoute: MissionRoute | undefined =
     savedRoute?.route ?? plannedRoute;
+  const terrain = useTerrainRoute(displayedRoute, routeMode, terrainOptions);
+  const currentMissionRoute: MissionRoute | undefined =
+    displayedRoute && (routeMode === "direct" || terrain.plan)
+      ? {
+          origin: displayedRoute.origin,
+          destination: displayedRoute.destination,
+          ...(routeMode === "terrain" ? { terrain: terrain.plan } : {}),
+        }
+      : undefined;
   const activeLayer = nasaLayers.find(
     (l) => l.id === layerId && health[l.id]?.state === "ready",
   );
@@ -182,6 +195,17 @@ export function ScientificExplorer() {
             route={route}
             points={points}
             hasSavedRoute={!!savedRoute}
+            mode={routeMode}
+            onModeChange={(mode) => {
+              setRouteMode(mode);
+              setShowRoute(true);
+              if (mode === "terrain" && displayedRoute)
+                showRouteCoverage(displayedRoute);
+            }}
+            options={terrainOptions}
+            onOptionsChange={setTerrainOptions}
+            terrain={terrain}
+            comparisonRoute={displayedRoute}
             dispatch={(action) => {
               setSavedMissionId(undefined);
               setFocusedCoordinate(undefined);
@@ -285,6 +309,8 @@ export function ScientificExplorer() {
             onLayerError={fail}
             focusCoordinate={focusedCoordinate}
             previewCoordinate={markerPreview}
+            routeMode={routeMode}
+            terrainPlan={terrain.plan}
           />
           <div className={s.mapDisplay}>
             <label className={s.layer}>
@@ -403,8 +429,8 @@ export function ScientificExplorer() {
           missions={records.missions}
           ready={ready}
           currentRoute={
-            displayedRoute && routeDistance(displayedRoute) !== null
-              ? displayedRoute
+            currentMissionRoute && routeDistance(currentMissionRoute) !== null
+              ? currentMissionRoute
               : undefined
           }
           activeId={savedRoute?.id}
@@ -428,6 +454,8 @@ export function ScientificExplorer() {
           onSelect={(m) => {
             setFocusedCoordinate(undefined);
             setSavedMissionId(m.id);
+            setRouteMode(m.route.terrain ? "terrain" : "direct");
+            if (m.route.terrain) setTerrainOptions(m.route.terrain.options);
             setShowRoute(true);
             showRouteCoverage(m.route);
           }}
@@ -462,6 +490,7 @@ export function ScientificExplorer() {
         origin={displayedRoute?.origin}
         destination={displayedRoute?.destination}
         isLocal={local}
+        terrainPlan={routeMode === "terrain" ? terrain.plan : undefined}
       />
       <details className={s.sourceDisclosure}>
         <summary>Precisão, créditos e fontes</summary>

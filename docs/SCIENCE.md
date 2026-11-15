@@ -4,6 +4,8 @@ Consulta inicial: 14/11/2026. Textos são sínteses educativas, não citações 
 
 **Estado atual:** o mapa oferece MOLA — Relevo global e Imagem oficial de Jezero. Coordenadas USGS/IAU para três centros e a estimativa geométrica com raio de Marte foram preservadas. Veja a [configuração cartográfica atual](MAP_DISPLAY.md); a [fase 2](PHASE_2.md) e as referências abaixo registram também integrações anteriores.
 
+O planejador oferece agora uma [rota experimental por A* com DEM numérico CTX/USGS](TERRAIN_ROUTING.md), limitada a um recorte de Jezero. A documentação separa alturas reais, agregação de 100 m, inclinações derivadas e custos experimentais; não usa cores do MOLA como elevações.
+
 ## Mars Maps
 
 Consulte também os [créditos e referências por produto cartográfico](MAP_ATTRIBUTION.md), incluindo as pendências do mosaico CTX preliminar.

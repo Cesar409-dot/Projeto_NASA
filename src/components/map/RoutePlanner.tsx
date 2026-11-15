@@ -1,5 +1,17 @@
 "use client";
-import { distanceLabel, type MapPoint } from "@/lib/mars/exploration";
+import {
+  distanceLabel,
+  routeDistance,
+  type MissionRoute,
+  type MapPoint,
+} from "@/lib/mars/exploration";
+import {
+  defaultTerrainOptions,
+  type TerrainOptions,
+} from "@/lib/mars/terrain-routing";
+import { terrainModel, terrainNotice } from "@/data/terrain-model";
+import type { RouteMode, TerrainState } from "./useTerrainRoute";
+import { TerrainRouteInfo } from "./TerrainRouteInfo";
 import type { Dispatch } from "react";
 import { sciencePoints } from "@/data/science-points";
 import type { RouteAction, RouteState } from "@/lib/mars/route-state";
@@ -11,7 +23,19 @@ export function RoutePlanner({
   dispatch,
   points = sciencePoints,
   hasSavedRoute = false,
+  mode = "direct",
+  onModeChange,
+  options = defaultTerrainOptions,
+  onOptionsChange,
+  terrain = { status: "idle" },
+  comparisonRoute,
 }: {
+  mode?: RouteMode;
+  onModeChange?: (mode: RouteMode) => void;
+  options?: TerrainOptions;
+  onOptionsChange?: (options: TerrainOptions) => void;
+  terrain?: TerrainState;
+  comparisonRoute?: MissionRoute;
   points?: MapPoint[];
   hasSavedRoute?: boolean;
   route: RouteState;
@@ -54,6 +78,72 @@ export function RoutePlanner({
           </label>
         ))}
       </div>
+      <label className={s.selectLabel}>
+        Tipo de rota
+        <select
+          className={u.field}
+          value={mode}
+          onChange={(e) => onModeChange?.(e.target.value as RouteMode)}
+        >
+          <option value="direct">Rota direta</option>
+          <option value="terrain">Rota pelo terreno</option>
+        </select>
+      </label>
+      <p className={s.small}>
+        {mode === "direct"
+          ? "Menor distância geométrica aproximada. Não considera relevo nem obstáculos."
+          : "A* busca menor custo estimado na grade de Jezero, penalizando inclinações. Uso experimental."}
+      </p>
+      {mode === "terrain" && (
+        <>
+          <label className={s.selectLabel}>
+            Limite de inclinação estimada
+            <select
+              className={u.field}
+              value={options.maxSlopeDegrees}
+              onChange={(e) =>
+                onOptionsChange?.({
+                  ...options,
+                  maxSlopeDegrees: Number(e.target.value),
+                })
+              }
+            >
+              {[10, 15, 20, 25, 30].map((value) => (
+                <option key={value} value={value}>
+                  {value}°
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className={s.small}>
+            Cobertura: 18,30–18,65° N · 77,10–77,80° E. Dados locais CTX/USGS;
+            grade de 100 m. Células desconhecidas são bloqueadas.
+          </p>
+          <p className={s.small}>
+            <a href={terrainModel.source} target="_blank" rel="noreferrer">
+              Fonte do modelo de elevação
+            </a>
+          </p>
+          <div role="status" className={s.routeStatus}>
+            {terrain.status === "loading"
+              ? "Calculando no terreno…"
+              : terrain.status === "error"
+                ? terrain.error
+                : terrain.status === "ready"
+                  ? "Rota pelo terreno calculada. Linha contínua verde em MOLA."
+                  : "Selecione origem e destino para calcular no terreno."}
+          </div>
+          {terrain.plan &&
+            comparisonRoute &&
+            routeDistance(comparisonRoute) !== null && (
+              <TerrainRouteInfo
+                plan={terrain.plan}
+                directDistance={routeDistance(comparisonRoute)!}
+              />
+            )}
+          {!terrain.plan && <p className={s.small}>{terrainNotice}</p>}
+        </>
+      )}
       <p className={s.routeStatus} aria-live="polite">
         {route.origin && route.destination
           ? distanceLabel({

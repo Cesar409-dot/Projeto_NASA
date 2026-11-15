@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import LeafletCanvas from "@/components/map/LeafletCanvas";
 import { nasaLayers, officialImage } from "@/data/map-layers";
 import { sciencePoints } from "@/data/science-points";
+import type { TerrainPlan } from "@/lib/mars/terrain-routing";
 import { Browser, Map as LeafletMap, Point, latLngBounds } from "leaflet";
 const threeDDescriptor = Object.getOwnPropertyDescriptor(Browser, "any3d")!;
 let viewport = new Point(960, 540);
@@ -35,6 +36,78 @@ afterEach(() => {
   Object.defineProperty(Browser, "any3d", threeDDescriptor);
 });
 describe("Controles nativos do mapa Leaflet", () => {
+  it("distingue as linhas e nunca desenha fallback direto ao solicitar terreno indisponível", () => {
+    const props = {
+      layer: nasaLayers[0],
+      selected: sciencePoints[0],
+      onSelect: vi.fn(),
+      origin: sciencePoints[0],
+      destination: sciencePoints[1],
+      showPoints: false,
+      showRoute: true,
+      onLayerError: vi.fn(),
+    };
+    const view = render(
+      <LeafletCanvas key="mola" {...props} routeMode="terrain" />,
+    );
+    expect(
+      view.container.querySelectorAll("path.leaflet-interactive"),
+    ).toHaveLength(0);
+    view.rerender(<LeafletCanvas key="mola" {...props} routeMode="direct" />);
+    expect(
+      view.container
+        .querySelector('path[stroke="#f6a578"]')
+        ?.getAttribute("stroke-dasharray"),
+    ).toBe("7 9");
+    // Synthetic display fixture, only used by this test.
+    const terrain: TerrainPlan = {
+      algorithm: "astar-v1",
+      modelId: "test-only",
+      options: { maxSlopeDegrees: 20, slopePenalty: 15 },
+      path: [
+        [18.48, 77.38],
+        [18.5, 77.3],
+        [18.55, 77.2],
+      ],
+      distanceMetres: 13000,
+      cost: 15000,
+      ascentMetres: 10,
+      descentMetres: 10,
+      maxSlopeDegrees: 10,
+      visited: 100,
+      startOffsetMetres: 0,
+      endOffsetMetres: 0,
+    };
+    view.rerender(
+      <LeafletCanvas
+        key="mola"
+        {...props}
+        routeMode="terrain"
+        terrainPlan={terrain}
+      />,
+    );
+    expect(
+      view.container
+        .querySelector('path[stroke="#a5ffe0"][stroke-width="5"]')
+        ?.getAttribute("stroke-dasharray"),
+    ).toBeNull();
+    expect(view.container.querySelector('path[stroke="#f6a578"]')).toBeNull();
+    view.rerender(
+      <LeafletCanvas
+        key="image"
+        {...props}
+        layer={undefined}
+        routeMode="terrain"
+        terrainPlan={terrain}
+      />,
+    );
+    expect(
+      view.container.querySelectorAll("path.leaflet-interactive"),
+    ).toHaveLength(0);
+    expect(
+      screen.getByText(/O trajeto pelo terreno não pode ser projetado/),
+    ).toBeTruthy();
+  });
   it("move MOLA para a coordenada informada respeitando o zoom nativo", () => {
     const setView = vi.spyOn(LeafletMap.prototype, "setView");
     const props = {
