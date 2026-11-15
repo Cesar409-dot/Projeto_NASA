@@ -238,3 +238,142 @@ describe("Mars Maps: exploração persistente", { timeout: 20000 }, () => {
     ).toBe("Coleta no delta");
   });
 });
+
+describe("Cadastro de marcadores", { timeout: 20000 }, () => {
+  function openMarkerForm() {
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar marcador" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Selecionar posição de teste" }),
+    );
+    return screen.getByRole("dialog");
+  }
+  it("aguarda a posição do mapa e exige um nome que não contenha apenas espaços", () => {
+    render(<ScientificExplorer />);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Selecionar posição de teste",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar marcador" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Selecionar posição de teste" }),
+    );
+    const name = screen.getByLabelText("Nome do marcador");
+    const save = screen.getByRole("button", {
+      name: "Salvar marcador",
+    }) as HTMLButtonElement;
+    expect((name as HTMLInputElement).required).toBe(true);
+    expect(save.disabled).toBe(true);
+    fireEvent.change(name, { target: { value: "   " } });
+    expect(save.disabled).toBe(true);
+    fireEvent.submit(name.closest("form")!);
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    fireEvent.change(name, { target: { value: "  Ponto inicial  " } });
+    fireEvent.click(save);
+    const records = parseRecords(localStorage.getItem(STORAGE_KEY)!);
+    expect(records.markers).toHaveLength(1);
+    expect(records.markers[0]).toMatchObject({
+      name: "Ponto inicial",
+      description: "",
+      category: "Exploração",
+      visited: false,
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Ponto inicial" })).toBeTruthy();
+  });
+  it("salva os campos informados e mantém as coordenadas e a origem cartográfica", () => {
+    render(<ScientificExplorer />);
+    const dialog = openMarkerForm();
+    const category = within(dialog).getByLabelText("Categoria");
+    expect(
+      within(category)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Exploração", "Ciência", "Recursos", "Risco", "Pessoal"]);
+    fireEvent.change(within(dialog).getByLabelText("Nome do marcador"), {
+      target: { value: "  Afloramento oeste  " },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Descrição"), {
+      target: { value: "  Observação registrada pelo astronauta.  " },
+    });
+    fireEvent.change(category, { target: { value: "Risco" } });
+    fireEvent.click(within(dialog).getByLabelText("Ponto visitado"));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Salvar marcador" }),
+    );
+    const records = parseRecords(localStorage.getItem(STORAGE_KEY)!);
+    expect(records.markers).toHaveLength(1);
+    expect(records.markers[0]).toMatchObject({
+      name: "Afloramento oeste",
+      description: "Observação registrada pelo astronauta.",
+      category: "Risco",
+      visited: true,
+      layerId: "ctx",
+      coordinate: {
+        body: "Mars",
+        latitudeType: "planetocentric",
+        longitudeDirection: "east",
+        latitude: 18.45,
+        longitude: 77.4,
+      },
+    });
+    expect(
+      screen.getByRole("heading", { name: "Afloramento oeste" }),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByRole("option", { name: "Afloramento oeste" }),
+    ).toHaveLength(2);
+  });
+  it("cancela a seleção ou fecha o formulário sem cadastrar um marcador", () => {
+    render(<ScientificExplorer />);
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar marcador" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar marcador" }));
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Selecionar posição de teste",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    openMarkerForm();
+    fireEvent.change(screen.getByLabelText("Nome do marcador"), {
+      target: { value: "Rascunho cancelado" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Fechar formulário" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: "Rascunho cancelado" }),
+    ).toBeNull();
+  });
+  it("preserva o formulário quando a gravação falha e permite tentar novamente sem duplicar", () => {
+    render(<ScientificExplorer />);
+    openMarkerForm();
+    fireEvent.change(screen.getByLabelText("Nome do marcador"), {
+      target: { value: "Amostra para revisão" },
+    });
+    const storage = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementationOnce(() => {
+        throw new Error("QuotaExceededError");
+      });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar marcador" }));
+    expect(
+      within(screen.getByRole("dialog")).getByRole("alert").textContent,
+    ).toContain("Não foi possível salvar");
+    expect(
+      (screen.getByLabelText("Nome do marcador") as HTMLInputElement).value,
+    ).toBe("Amostra para revisão");
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Salvar marcador" }));
+    expect(storage).toHaveBeenCalledTimes(2);
+    expect(
+      parseRecords(localStorage.getItem(STORAGE_KEY)!).markers,
+    ).toHaveLength(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
