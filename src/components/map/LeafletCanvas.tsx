@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { CRS, type LatLngBoundsExpression } from "leaflet";
+import { CRS, DomEvent, type LatLngBoundsExpression } from "leaflet";
 import {
   MapContainer,
   TileLayer,
@@ -33,6 +33,15 @@ function ViewControl({
   layer?: NasaLayer;
 }) {
   const map = useMap();
+  const control = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const button = control.current!;
+    DomEvent.disableClickPropagation(button);
+    DomEvent.disableScrollPropagation(button);
+    return () => {
+      DomEvent.off(button);
+    };
+  }, []);
   useEffect(() => {
     if (!layer) {
       map.panTo(selected.imagePosition, { animate: false });
@@ -58,6 +67,8 @@ function ViewControl({
   }, [map]);
   return (
     <button
+      ref={control}
+      type="button"
       className={s.centerMap}
       onClick={(event) => {
         event.stopPropagation();

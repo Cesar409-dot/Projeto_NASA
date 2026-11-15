@@ -1,6 +1,10 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { markerCategories, type PersonalMarker } from "@/lib/mars/exploration";
+import {
+  markerCategories,
+  mapCoordinateLabel,
+  type PersonalMarker,
+} from "@/lib/mars/exploration";
 import { MapDialog } from "./MapDialog";
 import u from "../ui.module.css";
 import s from "../map.module.css";
@@ -81,8 +85,7 @@ export function MarkerEditor({
         </label>
         <p className={s.small}>
           Coordenadas obtidas na grade marciana:{" "}
-          {draft.coordinate.latitude.toFixed(5)}° N,{" "}
-          {draft.coordinate.longitude.toFixed(5)}° E. Base: {draft.layerId}.
+          {mapCoordinateLabel(draft.coordinate)}. Base: {draft.layerId}.
           Precisão limitada à base; posição de campo não validada.
         </p>
         <button

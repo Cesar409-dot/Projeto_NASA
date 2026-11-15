@@ -54,7 +54,7 @@ Executar `npm.cmd test`, `npm.cmd run typecheck` e `npm.cmd run build`. Testes e
 
 ## Resultado da validação — 15/11/2026
 
-- 7 testes matemáticos e 68 testes Vitest passaram (75 no total).
+- 7 testes matemáticos e 75 testes Vitest passaram (82 no total).
 - TypeScript e lint dos arquivos da frente passaram.
 - Build de produção com npm.cmd run build -- --webpack passou e gerou a rota estática /mars-maps. Webpack foi utilizado após o watcher de desenvolvimento Turbopack apresentar atualizações contínuas no diretório sincronizado pelo OneDrive. Não houve mudança da configuração do projeto.
 - A verificação visual permanece pendente, pelo encerramento do Computer Use descrito acima.
@@ -64,9 +64,18 @@ Executar `npm.cmd test`, `npm.cmd run typecheck` e `npm.cmd run build`. Testes e
 - src/components/map/: LeafletCanvas.tsx, MapDialog.tsx, MarkerEditor.tsx, MissionManager.tsx, MissionSummary.tsx, RoutePlanner.tsx, ScientificExplorer.tsx e useExplorationRecords.ts.
 - src/components/map.module.css e src/data/map-layers.ts.
 - src/lib/mars/: exploration.ts e wmts.ts.
-- tests/: map-exploration.test.tsx, map-expansion.spec.ts, map-persistence.spec.ts, map-forms.test.tsx e fixtures CTX regional/MOLA.
+- tests/: map-exploration.test.tsx, map-expansion.spec.ts, map-persistence.spec.ts, map-forms.test.tsx, map-canvas.test.tsx e fixtures CTX regional/MOLA.
 - docs/MARS_MAPS_EXPANSION.md.
 
 ## Ampliação da cobertura de testes
 
-Foram acrescentados cenários de cadastro, edição e exclusão de marcadores, persistência e conflitos entre abas, cadastro e validação de missões e integração com rotas. A integração cobre extremos próprios, inversão, destaque e limpeza de rotas salvas, substituição explícita da rota de uma missão, troca de cobertura CTX regional/MOLA e restauração do planejamento ao excluir uma missão destacada. Os testes de integração conferem os dados entregues ao canvas substituto; não comprovam renderização real de tiles ou polilinhas no navegador. Nenhum código de produção foi alterado nesta ampliação.
+Foram acrescentados cenários de cadastro, edição e exclusão de marcadores, persistência e conflitos entre abas, cadastro e validação de missões e integração com rotas. A integração cobre extremos próprios, inversão, destaque e limpeza de rotas salvas, substituição explícita da rota de uma missão, troca de cobertura CTX regional/MOLA e restauração do planejamento ao excluir uma missão destacada. Os testes de integração conferem os dados entregues ao canvas substituto; não comprovam renderização real de tiles ou polilinhas no navegador. Essa etapa alterou somente testes. As correções posteriores de produção estão descritas abaixo.
+
+## Correções após revisão de regressões
+
+- A missão destacada agora é obtida dos registros atuais por ID. Edições ou exclusões em outra aba atualizam a rota exibida, em vez de manter uma cópia antiga em memória.
+- A sincronização trata o evento de limpeza completa do localStorage e ignora eventos de sessionStorage. Conteúdo vazio armazenado é tratado como inválido e preservado, em vez de ser confundido com ausência da chave.
+- A leitura valida o tipo do objetivo opcional dos extremos da rota, impedindo que um objeto inválido chegue à renderização React.
+- Os rótulos de marcadores e detalhes de missões mostram corretamente o hemisfério sul e normalizam a apresentação da longitude para 0–360 graus leste. As coordenadas armazenadas não são alteradas.
+- O botão de recentralização usa a proteção de propagação do Leaflet: o clique no controle não cadastra um marcador quando o modo de adição está ativo. Uma regressão com o Leaflet real em jsdom verifica o controle e o clique intencional no terreno. Isso complementa os testes com canvas substituto, mas não valida pixels dos tiles, alinhamento ou layout em um navegador real.
+- O aviso da imagem local passou a mencionar coordenadas registradas, incluindo as de marcadores próprios, sem tratá-las como coordenadas de catálogo.

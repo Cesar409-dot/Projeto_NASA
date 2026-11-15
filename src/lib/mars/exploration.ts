@@ -91,6 +91,7 @@ function point(v: unknown): v is MapPoint {
   return (
     text(p.id) &&
     text(p.name) &&
+    (p.objective === undefined || text(p.objective, false)) &&
     (p.imagePosition === undefined ||
       (Array.isArray(p.imagePosition) &&
         p.imagePosition.length === 2 &&
@@ -153,4 +154,18 @@ export function routeSegments(route: MissionRoute): [number, number][][] {
     } else parts[parts.length - 1].push(next);
   }
   return parts;
+}
+
+/** Display planetocentric latitude and positive-east longitude without changing stored values. */
+export function mapCoordinateLabel(coordinate: MarsCoordinate): string {
+  assertMarsCoordinate(coordinate);
+  const longitude = ((coordinate.longitude % 360) + 360) % 360;
+  return (
+    Math.abs(coordinate.latitude).toFixed(5) +
+    "° " +
+    (coordinate.latitude >= 0 ? "N" : "S") +
+    ", " +
+    longitude.toFixed(5) +
+    "° E"
+  );
 }

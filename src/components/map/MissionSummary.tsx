@@ -76,9 +76,9 @@ export function MissionSummary({
       </p>
       {isLocal && (
         <p className={u.notice}>
-          Modo local: a posição dos marcadores e a linha na imagem são
-          esquemáticas. A estimativa numérica usa somente as coordenadas
-          catalogadas, não pixels da imagem.
+          Modo local: os pontos oficiais e a linha na imagem são esquemáticos. A
+          estimativa numérica usa as coordenadas marcianas registradas, não
+          pixels da imagem. Marcadores próprios não são desenhados nesta base.
         </p>
       )}
     </section>

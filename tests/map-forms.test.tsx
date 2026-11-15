@@ -246,3 +246,18 @@ describe("Validação do formulário de missões", () => {
     );
   });
 });
+
+describe("Rótulos de coordenadas globais", () => {
+  it("mostra o hemisfério sul e normaliza a longitude para leste sem alterar o marcador", () => {
+    const southern = {
+      ...marker,
+      coordinate: { ...marker.coordinate, latitude: -18.45, longitude: -77.4 },
+    };
+    const original = structuredClone(southern);
+    render(
+      <MarkerEditor marker={southern} onSave={vi.fn()} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText(/18.45000° S, 282.60000° E/)).toBeTruthy();
+    expect(southern).toEqual(original);
+  });
+});

@@ -961,3 +961,55 @@ describe(
     });
   },
 );
+
+describe("Sincronização da missão destacada", () => {
+  it("atualiza a rota selecionada quando outra aba edita a missão e remove o destaque quando ela é excluída", () => {
+    const mission = {
+      id: "mission-sync",
+      name: "Missão sincronizada",
+      objective: "Revisar a rota",
+      description: "",
+      date: "2026-12-01",
+      route: { origin: sciencePoints[0], destination: sciencePoints[1] },
+    };
+    const records = { version: 1, markers: [], missions: [mission] };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    render(<ScientificExplorer />);
+    fireEvent.click(screen.getByRole("button", { name: mission.name }));
+    expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+      sciencePoints[0].name,
+    );
+    const updated = {
+      ...records,
+      missions: [
+        {
+          ...mission,
+          route: { origin: sciencePoints[1], destination: sciencePoints[0] },
+        },
+      ],
+    };
+    function notify(value: typeof records) {
+      const raw = JSON.stringify(value);
+      localStorage.setItem(STORAGE_KEY, raw);
+      fireEvent(
+        window,
+        new StorageEvent("storage", {
+          key: STORAGE_KEY,
+          newValue: raw,
+          storageArea: localStorage,
+        }),
+      );
+    }
+    notify(updated);
+    expect(screen.getByTestId("map").getAttribute("data-origin")).toBe(
+      sciencePoints[1].name,
+    );
+    expect(screen.getByTestId("map").getAttribute("data-destination")).toBe(
+      sciencePoints[0].name,
+    );
+    notify({ ...records, missions: [] });
+    expect(screen.getByTestId("map").getAttribute("data-route-id")).toBeNull();
+    expect(screen.getByTestId("map").getAttribute("data-origin")).toBeNull();
+    expect(screen.queryByRole("button", { name: mission.name })).toBeNull();
+  });
+});

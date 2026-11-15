@@ -6,10 +6,10 @@ import { MarkerEditor } from "./MarkerEditor";
 import { MissionManager } from "./MissionManager";
 import {
   distanceLabel,
+  mapCoordinateLabel,
   routeDistance,
   type PersonalMarker,
   type MissionRoute,
-  type SavedMission,
 } from "@/lib/mars/exploration";
 import type { MarsCoordinate } from "@/lib/mars/coordinates";
 import { Crosshair } from "lucide-react";
@@ -36,7 +36,8 @@ export function ScientificExplorer() {
   const { records, ready, error, save } = useExplorationRecords();
   const [adding, setAdding] = useState(false);
   const [editingMarker, setEditingMarker] = useState<PersonalMarker>();
-  const [savedRoute, setSavedRoute] = useState<SavedMission>();
+  const [savedMissionId, setSavedMissionId] = useState<string>();
+  const savedRoute = records.missions.find((m) => m.id === savedMissionId);
   const [wide, setWide] = useState(false);
   const [selectedId, setSelectedId] = useState("belva");
   const [layerId, setLayerId] = useState("ctx");
@@ -145,7 +146,7 @@ export function ScientificExplorer() {
             points={points}
             hasSavedRoute={!!savedRoute}
             dispatch={(action) => {
-              setSavedRoute(undefined);
+              setSavedMissionId(undefined);
               dispatch(action);
             }}
           />
@@ -228,7 +229,7 @@ export function ScientificExplorer() {
           <PointDetails
             point={selected}
             dispatch={(action) => {
-              setSavedRoute(undefined);
+              setSavedMissionId(undefined);
               dispatch(action);
             }}
           />
@@ -253,8 +254,7 @@ export function ScientificExplorer() {
               </p>
               <p>{m.description}</p>
               <p className={s.small}>
-                {m.coordinate.latitude.toFixed(5)}° N,{" "}
-                {m.coordinate.longitude.toFixed(5)}° E · Base: {m.layerId}
+                {mapCoordinateLabel(m.coordinate)} · Base: {m.layerId}
               </p>
               <div className={s.actions}>
                 <button
@@ -300,7 +300,6 @@ export function ScientificExplorer() {
             ? records.missions.map((p) => (p.id === m.id ? m : p))
             : [...records.missions, m];
           const success = save({ ...records, missions });
-          if (success && savedRoute?.id === m.id) setSavedRoute(m);
           return success;
         }}
         onDelete={(id) => {
@@ -311,10 +310,10 @@ export function ScientificExplorer() {
             }) &&
             savedRoute?.id === id
           )
-            setSavedRoute(undefined);
+            setSavedMissionId(undefined);
         }}
         onSelect={(m) => {
-          setSavedRoute(m);
+          setSavedMissionId(m.id);
           setShowRoute(true);
           const covers = (layer: (typeof nasaLayers)[number]) =>
             [m.route.origin, m.route.destination].every(

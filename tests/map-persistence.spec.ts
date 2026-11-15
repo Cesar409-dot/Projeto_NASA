@@ -93,6 +93,7 @@ describe("Persistência local de Mars Maps", () => {
   });
   it.each([
     ["JSON inválido", "{dados interrompidos"],
+    ["conteúdo vazio", ""],
     [
       "versão incompatível",
       JSON.stringify({ version: 99, markers: [], missions: [] }),
@@ -120,6 +121,79 @@ describe("Persistência local de Mars Maps", () => {
     });
     expect(write).not.toHaveBeenCalled();
     expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
+  });
+  it("rejeita objetivos de rota com tipo inválido sem sobrescrever o conteúdo", () => {
+    const original = recordsFixture();
+    const broken = JSON.stringify({
+      ...original,
+      missions: [
+        {
+          ...original.missions[0],
+          route: {
+            ...original.missions[0].route,
+            origin: {
+              ...original.missions[0].route.origin,
+              objective: { invalid: true },
+            },
+          },
+        },
+      ],
+    });
+    localStorage.setItem(STORAGE_KEY, broken);
+    const { result } = renderHook(useExplorationRecords);
+    expect(result.current.ready).toBe(false);
+    act(() => {
+      expect(result.current.save(emptyRecords)).toBe(false);
+    });
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(broken);
+  });
+  it("sincroniza localStorage.clear de outra aba e ignora eventos de sessionStorage", () => {
+    const original = recordsFixture();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(original));
+    const { result } = renderHook(useExplorationRecords);
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: STORAGE_KEY,
+          newValue: JSON.stringify(emptyRecords),
+          storageArea: sessionStorage,
+        }),
+      );
+    });
+    expect(result.current.records).toEqual(original);
+    localStorage.clear();
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: null,
+          newValue: null,
+          storageArea: localStorage,
+        }),
+      );
+    });
+    expect(result.current.records).toEqual(emptyRecords);
+    expect(result.current.error).toBe("");
+  });
+  it("bloqueia um valor vazio recebido de outra aba", () => {
+    const original = recordsFixture();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(original));
+    const { result } = renderHook(useExplorationRecords);
+    localStorage.setItem(STORAGE_KEY, "");
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: STORAGE_KEY,
+          newValue: "",
+          storageArea: localStorage,
+        }),
+      );
+    });
+    expect(result.current.ready).toBe(false);
+    expect(result.current.records).toEqual(original);
+    act(() => {
+      expect(result.current.save(emptyRecords)).toBe(false);
+    });
+    expect(localStorage.getItem(STORAGE_KEY)).toBe("");
   });
   it("não sobrescreve dados quando o navegador impede a leitura do armazenamento", () => {
     const original = JSON.stringify(recordsFixture());

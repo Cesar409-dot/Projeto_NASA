@@ -15,7 +15,7 @@ export function useExplorationRecords() {
       const raw = localStorage.getItem(STORAGE_KEY);
       // Hydrate browser-only records after SSR without writing defaults over saved data.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRecords(raw ? parseRecords(raw) : emptyRecords);
+      setRecords(raw !== null ? parseRecords(raw) : emptyRecords);
       setReady(true);
     } catch {
       setError(
@@ -23,10 +23,11 @@ export function useExplorationRecords() {
       );
     }
     const sync = (event: StorageEvent) => {
-      if (event.key !== STORAGE_KEY) return;
+      if (event.key !== null && event.key !== STORAGE_KEY) return;
       try {
+        if (event.storageArea && event.storageArea !== localStorage) return;
         setRecords(
-          event.newValue ? parseRecords(event.newValue) : emptyRecords,
+          event.newValue !== null ? parseRecords(event.newValue) : emptyRecords,
         );
         setError("");
         setReady(true);
@@ -45,7 +46,7 @@ export function useExplorationRecords() {
     try {
       // Refuse to overwrite changes from another tab that have not been rendered yet.
       const current = localStorage.getItem(STORAGE_KEY);
-      const latest = current ? parseRecords(current) : emptyRecords;
+      const latest = current !== null ? parseRecords(current) : emptyRecords;
       if (JSON.stringify(latest) !== JSON.stringify(records)) {
         setRecords(latest);
         setError(

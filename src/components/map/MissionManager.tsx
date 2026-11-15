@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from "react";
 import {
   distanceLabel,
+  mapCoordinateLabel,
   routeDistance,
   validDate,
   type MissionRoute,
@@ -206,11 +207,9 @@ export function MissionManager({
               <summary>Visualizar detalhes</summary>
               <p>{m.description || "Sem descrição."}</p>
               <p className={s.small}>
-                Origem: {m.route.origin.coordinate.latitude}° N,{" "}
-                {m.route.origin.coordinate.longitude}° E.
+                Origem: {mapCoordinateLabel(m.route.origin.coordinate)}.
                 <br />
-                Destino: {m.route.destination.coordinate.latitude}° N,{" "}
-                {m.route.destination.coordinate.longitude}° E.
+                Destino: {mapCoordinateLabel(m.route.destination.coordinate)}.
               </p>
             </details>
             <div className={s.actions}>
