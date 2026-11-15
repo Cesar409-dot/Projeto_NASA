@@ -1,123 +1,108 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { translateSiteText, type SiteLanguage } from "@/lib/site-language";
 
 const STORAGE_KEY = "mars-survival-guide-language";
-const LanguageContext = createContext<{ language: SiteLanguage; setLanguage: (language: SiteLanguage) => void } | null>(null);
-const translatedAttributes = ["aria-label", "aria-valuetext", "aria-description", "placeholder", "title", "alt", "content"] as const;
-const ignoredTextElements = "script, style, noscript, textarea, code, pre, [data-language-ignore]";
-type TranslationState = { source: string; rendered: string };
-const textState = new WeakMap<Text, TranslationState>();
-const attributeState = new WeakMap<Element, Map<string, TranslationState>>();
+let fallbackLanguage: SiteLanguage = "pt-BR";
+const languageListeners = new Set<() => void>();
 
-function translateElement(element: Element, language: SiteLanguage) {
-  if (element.closest("[data-language-ignore]")) return;
-  let states = attributeState.get(element);
-  if (!states) {
-    states = new Map();
-    attributeState.set(element, states);
+type SiteLanguageContextValue = {
+  language: SiteLanguage;
+  setLanguage: (language: SiteLanguage) => void;
+  t: (value: string) => string;
+};
+
+const LanguageContext = createContext<SiteLanguageContextValue | null>(null);
+const defaultLanguageContext: SiteLanguageContextValue = {
+  language: "pt-BR",
+  setLanguage: () => {},
+  t: (value) => translateSiteText(value, "pt-BR"),
+};
+
+function readStoredLanguage(): SiteLanguage {
+  if (typeof window === "undefined") return "pt-BR";
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (saved === "en") return "en";
+    if (saved === "pt" || saved === "pt-BR") return "pt-BR";
+  } catch {
+    // Use the in-memory default when browser storage is unavailable.
   }
-  for (const name of translatedAttributes) {
-    const value = element.getAttribute(name);
-    if (value === null) continue;
-    let state = states.get(name);
-    if (!state || value !== state.rendered) state = { source: value, rendered: value };
-    const translated = translateSiteText(state.source, language);
-    state.rendered = translated;
-    states.set(name, state);
-    if (translated !== value) element.setAttribute(name, translated);
-  }
+  return fallbackLanguage;
 }
 
-function translateTextNode(node: Text, language: SiteLanguage) {
-  const parent = node.parentElement;
-  if (!parent || parent.closest(ignoredTextElements)) return;
-  let state = textState.get(node);
-  if (!state || node.data !== state.rendered) state = { source: node.data, rendered: node.data };
-  const translated = translateSiteText(state.source, language);
-  state.rendered = translated;
-  textState.set(node, state);
-  if (translated !== node.data) node.data = translated;
+function readServerLanguage(): SiteLanguage {
+  return "pt-BR";
 }
 
-function translatePage(language: SiteLanguage) {
-  document.documentElement.lang = language === "en" ? "en" : "pt-BR";
-  const root = document.documentElement;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let node = walker.nextNode();
-  while (node) {
-    translateTextNode(node as Text, language);
-    node = walker.nextNode();
+function subscribeToLanguage(listener: () => void) {
+  languageListeners.add(listener);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    fallbackLanguage = event.newValue === "en" ? "en" : "pt-BR";
+    listener();
+  };
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    languageListeners.delete(listener);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+function saveLanguage(nextLanguage: SiteLanguage) {
+  fallbackLanguage = nextLanguage;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, nextLanguage);
+  } catch {
+    // The in-memory language switch remains usable when storage is disabled.
   }
-  root.querySelectorAll("[aria-label], [aria-valuetext], [aria-description], [placeholder], [title], [alt]").forEach((element) => translateElement(element, language));
-  const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-  if (description) translateElement(description, language);
+  languageListeners.forEach((listener) => listener());
+}
+
+function titleForPath(pathname: string) {
+  if (pathname.startsWith("/mars-maps/library/")) return "Detalhes da Exploração | Mars Survival Guide";
+  if (pathname === "/mars-maps/library") return "Biblioteca de Explorações | Mars Survival Guide";
+  if (pathname.startsWith("/mars-greenhouse")) return "Mars Greenhouse | Cultivo em Marte";
+  if (pathname.startsWith("/mars-maps")) return "Mars Maps | Mars Survival Guide";
+  if (pathname.startsWith("/mind-space")) return "Mind Space | Mars Survival Guide";
+  return "Mars Survival Guide — A próxima fronteira";
 }
 
 export function SiteLanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageValue] = useState<SiteLanguage>("pt");
+  // React uses the same Portuguese server snapshot during hydration, then reads
+  // the saved browser preference from this external store.
+  const language = useSyncExternalStore(subscribeToLanguage, readStoredLanguage, readServerLanguage);
   const pathname = usePathname();
 
-  const setLanguage = useCallback((nextLanguage: SiteLanguage) => {
-    setLanguageValue(nextLanguage);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, nextLanguage);
-    } catch {
-      // Keep the language switch available when browser storage is disabled.
-    }
-  }, []);
+  const setLanguage = useCallback((nextLanguage: SiteLanguage) => saveLanguage(nextLanguage), []);
+
+  const t = useCallback((value: string) => translateSiteText(value, language), [language]);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved === "en" || saved === "pt") setLanguageValue(saved);
-    } catch {
-      // Portuguese is the default when browser storage is unavailable.
+    document.documentElement.lang = language;
+    document.title = translateSiteText(titleForPath(pathname), language);
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (description) {
+      description.content = translateSiteText(
+        "Explore Marte, os fatores humanos e o futuro do cultivo espacial em um atlas educativo interativo.",
+        language,
+      );
     }
-  }, []);
-
-  useEffect(() => {
-    translatePage(language);
-    const observer = new MutationObserver((records) => {
-      for (const record of records) {
-        if (record.type === "characterData") {
-          translateTextNode(record.target as Text, language);
-        } else if (record.type === "attributes") {
-          translateElement(record.target as Element, language);
-        } else {
-          record.addedNodes.forEach((added) => {
-            if (added.nodeType === Node.TEXT_NODE) translateTextNode(added as Text, language);
-            else if (added instanceof Element) {
-              if (added.matches("[aria-label], [aria-valuetext], [aria-description], [placeholder], [title], [alt]")) translateElement(added, language);
-              const walker = document.createTreeWalker(added, NodeFilter.SHOW_TEXT);
-              let node = walker.nextNode();
-              while (node) {
-                translateTextNode(node as Text, language);
-                node = walker.nextNode();
-              }
-              added.querySelectorAll("[aria-label], [aria-valuetext], [aria-description], [placeholder], [title], [alt]").forEach((element) => translateElement(element, language));
-            }
-          });
-        }
-      }
-    });
-    observer.observe(document.documentElement, {
-      subtree: true,
-      childList: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: [...translatedAttributes],
-    });
-    return () => observer.disconnect();
   }, [language, pathname]);
 
-  return <LanguageContext.Provider value={{ language, setLanguage }}>{children}</LanguageContext.Provider>;
+  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 export function useSiteLanguage() {
   const context = useContext(LanguageContext);
   if (!context) throw new Error("useSiteLanguage must be used inside SiteLanguageProvider");
   return context;
+}
+
+export function useOptionalSiteLanguage() {
+  return useContext(LanguageContext) ?? defaultLanguageContext;
 }

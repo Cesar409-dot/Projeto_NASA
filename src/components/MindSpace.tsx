@@ -1,5 +1,6 @@
 "use client";
 
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Activity,
@@ -145,7 +146,7 @@ function RatingScale({
   disabled: boolean;
 }) {
   const helpId = `${name}-scale-help`;
-  return (
+  return <LocalizedTree>{(
     <fieldset className={c.scale} aria-describedby={helpId}>
       <legend>{legend}</legend>
       <p id={helpId} className={c.scaleHelp}>
@@ -182,7 +183,7 @@ function RatingScale({
         <span>5 · {highLabel}</span>
       </div>
     </fieldset>
-  );
+  )}</LocalizedTree>;
 }
 
 function EvolutionChart({ entries }: { entries: MindSpaceEntry[] }) {
@@ -196,7 +197,7 @@ function EvolutionChart({ entries }: { entries: MindSpaceEntry[] }) {
       : left + (index * plotWidth) / (entries.length - 1);
   const yFor = (value: number) => top + ((5 - value) / 4) * plotHeight;
 
-  return (
+  return <LocalizedTree>{(
     <figure className={c.chartFigure}>
       <figcaption id="evolution-caption">
         Escalas autorrelatadas de 1 a 5 nos últimos {entries.length} registros.
@@ -266,7 +267,7 @@ function EvolutionChart({ entries }: { entries: MindSpaceEntry[] }) {
         ))}
       </ul>
     </figure>
-  );
+  )}</LocalizedTree>;
 }
 
 export function MindSpace() {
@@ -465,7 +466,7 @@ export function MindSpace() {
     else setFeedback("Registro excluído.");
   }
 
-  return (
+  return <LocalizedTree>{(
     <main id="main" className={`${u.page} ${c.page}`}>
       <div className={u.eyebrow}>
         <span className={u.dot} /> 02 / FATORES HUMANOS
@@ -772,7 +773,7 @@ export function MindSpace() {
             {selectedEntry.notes && (
               <blockquote className={c.notesQuote}>
                 <span>OBSERVAÇÕES PESSOAIS</span>
-                <p>{selectedEntry.notes}</p>
+                <p data-language-ignore>{selectedEntry.notes}</p>
               </blockquote>
             )}
             {previousEntry ? (
@@ -848,5 +849,5 @@ export function MindSpace() {
         As escalas registram percepções pessoais e servem para observação individual. A NASA descreve o uso de diários e rotinas como temas de apoio e pesquisa em isolamento; as sugestões deste protótipo não são protocolos oficiais.
       </p>
     </main>
-  );
+  )}</LocalizedTree>;
 }

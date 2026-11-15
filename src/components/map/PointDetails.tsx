@@ -1,11 +1,12 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import type { SciencePoint } from "@/data/science-points";
 import { coordinateLabel } from "@/lib/mars/coordinates";
 import u from "../ui.module.css";
 import s from "../map.module.css";
 
 export function PointDetails({ point }: { point: SciencePoint }) {
-  return (
+  return <LocalizedTree>{(
     <section
       className={s.mapBottom}
       aria-label="Informações do local selecionado"
@@ -31,5 +32,5 @@ export function PointDetails({ point }: { point: SciencePoint }) {
         </div>
       </div>
     </section>
-  );
+  )}</LocalizedTree>;
 }

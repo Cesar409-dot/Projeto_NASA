@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { SiteLanguageProvider } from "@/components/SiteLanguageProvider";
 export const metadata: Metadata = {
   title: {
@@ -18,6 +19,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body>
         <SiteLanguageProvider>
+          <LocalizedTree>
           <a className="skip" href="#main">
             Pular para o conteúdo
           </a>
@@ -29,6 +31,7 @@ export default function RootLayout({
             </span>
             <span>Protótipo educativo independente · Sem endosso da NASA</span>
           </footer>
+          </LocalizedTree>
         </SiteLanguageProvider>
       </body>
     </html>

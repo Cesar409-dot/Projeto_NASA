@@ -1,7 +1,8 @@
+import { LocalizedTree } from "@/components/LocalizedTree";
 import Link from "next/link";
 import u from "@/components/ui.module.css";
 export default function NotFound() {
-  return (
+  return <LocalizedTree>{(
     <main id="main" className={u.page}>
       <div className={u.eyebrow}>404 / FORA DO PERCURSO</div>
       <h1>VAMOS RECALIBRAR.</h1>
@@ -10,5 +11,5 @@ export default function NotFound() {
         Voltar ao início
       </Link>
     </main>
-  );
+  )}</LocalizedTree>;
 }

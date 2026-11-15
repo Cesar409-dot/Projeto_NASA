@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useEffect, useRef, type ReactNode } from "react";
 import s from "../map.module.css";
 import u from "../ui.module.css";
@@ -17,7 +18,7 @@ export function MapDialog({
     dialog.showModal();
     return () => dialog.close();
   }, []);
-  return (
+  return <LocalizedTree>{(
     <dialog
       ref={ref}
       className={s.dialog}
@@ -37,5 +38,5 @@ export function MapDialog({
       </div>
       {children}
     </dialog>
-  );
+  )}</LocalizedTree>;
 }

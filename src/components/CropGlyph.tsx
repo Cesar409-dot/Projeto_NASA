@@ -1,3 +1,4 @@
+import { LocalizedTree } from "@/components/LocalizedTree";
 import type { CSSProperties } from "react";
 import type { Crop } from "@/data/crops";
 import type { Environment } from "@/lib/greenhouse-simulation";
@@ -59,7 +60,7 @@ export function CropGlyph({
       ? "Ilustração de biorreator para " + crop.name
       : "Ilustração conceitual de " + crop.name);
 
-  return (
+  return <LocalizedTree>{(
     <div
       className={[
         s.cropGlyph,
@@ -183,5 +184,5 @@ export function CropGlyph({
         )}
       </svg>
     </div>
-  );
+  )}</LocalizedTree>;
 }

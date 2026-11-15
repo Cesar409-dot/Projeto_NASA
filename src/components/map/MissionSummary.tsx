@@ -1,3 +1,4 @@
+import { LocalizedTree } from "@/components/LocalizedTree";
 import type { MapPoint } from "@/lib/mars/exploration";
 import { surfaceDistanceMetres } from "@/lib/mars/coordinates";
 import u from "../ui.module.css";
@@ -22,7 +23,7 @@ export function MissionSummary({
     origin && destination
       ? surfaceDistanceMetres(origin.coordinate, destination.coordinate)
       : null;
-  return (
+  return <LocalizedTree>{(
     <section
       data-guide="summary"
       className={s.mission}
@@ -90,5 +91,5 @@ export function MissionSummary({
         </p>
       )}
     </section>
-  );
+  )}</LocalizedTree>;
 }

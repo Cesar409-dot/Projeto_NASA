@@ -1,3 +1,4 @@
+import { LocalizedTree } from "@/components/LocalizedTree";
 import type { TerrainPlan } from "@/lib/mars/terrain-routing";
 import { terrainModel, terrainNotice } from "@/data/terrain-model";
 import s from "../map.module.css";
@@ -10,7 +11,7 @@ export function TerrainRouteInfo({
   plan: TerrainPlan;
   directDistance: number;
 }) {
-  return (
+  return <LocalizedTree>{(
     <div className={s.small}>
       <dl>
         <dt>Distância direta</dt>
@@ -48,5 +49,5 @@ export function TerrainRouteInfo({
       </p>
       <p>{terrainNotice}</p>
     </div>
-  );
+  )}</LocalizedTree>;
 }

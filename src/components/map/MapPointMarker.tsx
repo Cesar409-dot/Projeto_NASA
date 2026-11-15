@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useRef, useState } from "react";
 import { CircleMarker, Tooltip, useMapEvents } from "react-leaflet";
 import type { LatLngExpression, Tooltip as LeafletTooltip } from "leaflet";
@@ -46,7 +47,7 @@ export function MapPointMarker({
 }) {
   const armed = useRef(false);
   const [touch, setTouch] = useState(false);
-  return (
+  return <LocalizedTree>{(
     <>
       {role && (
         <CircleMarker
@@ -112,5 +113,5 @@ export function MapPointMarker({
         )}
       </CircleMarker>
     </>
-  );
+  )}</LocalizedTree>;
 }

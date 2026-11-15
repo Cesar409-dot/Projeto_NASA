@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { CRS, DomEvent } from "leaflet";
 import {
@@ -126,7 +127,7 @@ function ViewControl({
     const [lat, lon] = marsLatLng(selected.coordinate);
     map.setView([lat, lon], map.getZoom(), { animate: false });
   }, [map, selected, layer]);
-  return (
+  return <LocalizedTree>{(
     <button
       ref={control}
       type="button"
@@ -138,7 +139,7 @@ function ViewControl({
     >
       Recentralizar mapa
     </button>
-  );
+  )}</LocalizedTree>;
 }
 
 function MapInteraction({
@@ -387,7 +388,7 @@ export default function LeafletCanvas({
     const timer = setTimeout(() => onLayerError(layer.id), 15000);
     return () => clearTimeout(timer);
   }, [loading, layer, onLayerError]);
-  return (
+  return <LocalizedTree>{(
     <div className={s.canvasWrap} data-guide="map">
       {loading && (
         <span className={s.tileStatus} role="status">
@@ -571,5 +572,5 @@ export default function LeafletCanvas({
         </Pane>
       </MapContainer>
     </div>
-  );
+  )}</LocalizedTree>;
 }

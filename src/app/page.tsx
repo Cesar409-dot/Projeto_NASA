@@ -1,3 +1,4 @@
+import { LocalizedTree } from "@/components/LocalizedTree";
 import Link from "next/link";
 import { ArrowUpRight, ArrowRight, Map, Brain, Sprout } from "lucide-react";
 import s from "./page.module.css";
@@ -26,7 +27,7 @@ const fronts = [
   },
 ];
 export default function Home() {
-  return (
+  return <LocalizedTree>{(
     <main id="main" className={u.page} style={{ paddingTop: 0 }}>
       <section className={s.hero}>
         <div className={s.content}>
@@ -116,5 +117,5 @@ export default function Home() {
         </div>
       </section>
     </main>
-  );
+  )}</LocalizedTree>;
 }

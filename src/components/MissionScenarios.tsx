@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useState } from "react";
 import { missionScenarios } from "@/data/mission-scenarios";
 import u from "./ui.module.css";
@@ -7,7 +8,7 @@ import s from "./scenarios.module.css";
 export function MissionScenarios() {
   const [selected, setSelected] = useState(missionScenarios[0].id);
   const scenario = missionScenarios.find((s) => s.id === selected)!;
-  return (
+  return <LocalizedTree>{(
     <section aria-label="Cenários de missão">
       <div className={u.sectionTitle}>
         <h2>ESCOLHAS NO ESPAÇO.</h2>
@@ -55,5 +56,5 @@ export function MissionScenarios() {
         não são protocolos oficiais de missão, terapia ou avaliação psicológica.
       </p>
     </section>
-  );
+  )}</LocalizedTree>;
 }

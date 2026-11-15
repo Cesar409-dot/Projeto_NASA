@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   markerCategories,
@@ -61,7 +62,7 @@ export function MarkerEditor({
         description: draft.description.trim(),
       });
   }
-  return (
+  return <LocalizedTree>{(
     <MapDialog
       title={marker.name ? "Editar marcador" : "Novo marcador"}
       onClose={onClose}
@@ -233,5 +234,5 @@ export function MarkerEditor({
         </button>
       </form>
     </MapDialog>
-  );
+  )}</LocalizedTree>;
 }

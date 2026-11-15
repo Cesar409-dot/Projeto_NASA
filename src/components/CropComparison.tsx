@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { crops, comparisonFields } from "@/data/crops";
 import s from "./greenhouse.module.css";
 import u from "./ui.module.css";
@@ -11,7 +12,7 @@ export function CropComparison({
   onToggle: (id: string) => void;
 }) {
   const selected = crops.filter((c) => ids.includes(c.id));
-  return (
+  return <LocalizedTree>{(
     <section aria-label="Comparação de culturas">
       <div className={u.sectionTitle}>
         <h2>COMPARE NECESSIDADES.</h2>
@@ -75,5 +76,5 @@ export function CropComparison({
         experimentais e fonte. Não há recomendação agronômica para Marte.
       </p>
     </section>
-  );
+  )}</LocalizedTree>;
 }

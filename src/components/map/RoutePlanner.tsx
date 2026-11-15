@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import {
   distanceLabel,
   routeDistance,
@@ -41,7 +42,7 @@ export function RoutePlanner({
   route: RouteState;
   dispatch: Dispatch<RouteAction>;
 }) {
-  return (
+  return <LocalizedTree>{(
     <section className={s.planner} aria-label="Planejamento de Marswalk">
       <h3>Planejar Marswalk</h3>
       <p className={s.small}>
@@ -184,5 +185,5 @@ export function RoutePlanner({
         indica um trajeto seguro.
       </p>
     </section>
-  );
+  )}</LocalizedTree>;
 }

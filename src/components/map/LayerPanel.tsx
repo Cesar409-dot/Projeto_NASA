@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { nasaLayers, capabilitiesUrl } from "@/data/map-layers";
 import type { LayerHealth } from "@/lib/mars/wmts";
 import u from "../ui.module.css";
@@ -15,7 +16,7 @@ export function LayerPanel({
   health: Record<string, LayerHealth>;
   retry: () => void;
 }) {
-  return (
+  return <LocalizedTree>{(
     <section aria-label="Camadas cartográficas" data-guide="basemap">
       <h3>Bases cartográficas</h3>
       <p className={s.small}>A base cartográfica é a imagem de fundo. Trocar a visualização não altera os pontos nem a rota planejada.</p>
@@ -97,5 +98,5 @@ export function LayerPanel({
         </p>
       </details>
     </section>
-  );
+  )}</LocalizedTree>;
 }

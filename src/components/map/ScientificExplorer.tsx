@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import dynamic from "next/dynamic";
 import { useReducer, useState, useCallback, useRef, useEffect } from "react";
 import { ArrowRight, Check, Circle } from "lucide-react";
@@ -311,7 +312,7 @@ export function ScientificExplorer() {
       recordsReady={ready}
     />
   );
-  return (
+  return <LocalizedTree>{(
     <main id="main" className={`${u.page} ${s.explorer} ${s.marsMapsApp}`}>
       <div className={s.mapHeaderActions}>
         <Link className={s.libraryHeaderLink} href="/mars-maps/library">Biblioteca de Explorações</Link>
@@ -432,11 +433,11 @@ export function ScientificExplorer() {
           <div className={s.missionList}>
             {records.markers.map((m) => (
               <article key={m.id} className={s.record}>
-                <h3>{m.name}</h3>
+                <h3><span data-language-ignore>{m.name}</span></h3>
                 <p className={s.small}>
                   {m.category} · {m.visited ? "Visitado" : "Não visitado"}
                 </p>
-                {m.description && <p>{m.description}</p>}
+                {m.description && <p><span data-language-ignore>{m.description}</span></p>}
                 <p className={s.small}>
                   {mapCoordinateLabel(m.coordinate)} · {m.layerId === "manual" ? "Posição informada" : "Base: " + m.layerId}
                 </p>
@@ -619,5 +620,5 @@ export function ScientificExplorer() {
         <button className={u.button} type="button" onClick={() => setStage("planning")}>Voltar ao planejamento</button>
       </section>}
     </main>
-  );
+  )}</LocalizedTree>;
 }

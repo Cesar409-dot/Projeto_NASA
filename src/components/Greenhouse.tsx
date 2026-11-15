@@ -1,5 +1,6 @@
 "use client";
 
+import { LocalizedTree } from "@/components/LocalizedTree";
 import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
@@ -47,7 +48,7 @@ function SliderControl({ crop, factor, value, onChange }: { crop: Crop; factor: 
   const meta = factorMeta[factor];
   const Icon = meta.icon;
   const state = rangeState(value, ref);
-  return (
+  return <LocalizedTree>{(
     <fieldset className={s.sliderControl}>
       <legend><span className={s.sliderTitle}><Icon size={17} aria-hidden="true" />{meta.name}</span><strong>{formatValue(value, ref)}</strong></legend>
       <label className={s.visuallyHidden} htmlFor={crop.id + "-" + factor}>{meta.name} para {crop.name}</label>
@@ -56,7 +57,7 @@ function SliderControl({ crop, factor, value, onChange }: { crop: Crop; factor: 
       <div className={s.referenceRow}><span>Referência: <b>{ref.min}–{ref.max} {ref.unit}</b></span><span className={value < ref.min || value > ref.max ? s.factorOutside : s.factorOkay}>{state}</span></div>
       <small className={s.referenceQuality}>{qualityLabel(ref)} · {ref.label}</small>
     </fieldset>
-  );
+  )}</LocalizedTree>;
 }
 
 function explanationFor(crop: Crop, environment: Environment, damage: number) {
@@ -90,7 +91,7 @@ function Inventory({ selectedId, onSelect }: { selectedId: string; onSelect: (cr
       return typeMatch && (!term || normalize(haystack).includes(term));
     });
   }, [filter, query]);
-  return (
+  return <LocalizedTree>{(
     <section className={s.inventory} aria-labelledby="inventory-title">
       <header className={s.inventoryHeader}><div><span className={s.eyebrow}>01 / INVENTÁRIO DE CULTIVO</span><h2 id="inventory-title">Escolha uma cultura</h2><p>18 categorias agrícolas para explorar. Selecione um cartão para abrir sua inspeção ambiental.</p></div><span className={s.inventoryCount}><b>{String(visible.length).padStart(2, "0")}</b> / 18 disponíveis</span></header>
       <div className={s.inventoryToolbar}>
@@ -104,7 +105,7 @@ function Inventory({ selectedId, onSelect }: { selectedId: string; onSelect: (cr
         {visible.length === 0 ? <div className={s.emptySearch}>Nenhuma categoria encontrada. Tente outro nome ou espécie.</div> : null}
       </div>
     </section>
-  );
+  )}</LocalizedTree>;
 }
 
 function Inspection({ crop, environment, damage, viewerState, onBack, onChange, onRestore, onDamage, onViewerState }: {
@@ -117,13 +118,13 @@ function Inspection({ crop, environment, damage, viewerState, onBack, onChange, 
   const isHealthyEnvironment = score === 0;
   const biofactory = crop.biologicalType === "biofactory";
   const viewerStatus = useCallback((state: "ready" | "fallback") => onViewerState(state), [onViewerState]);
-  return (
+  return <LocalizedTree>{(
     <section className={s.inspection} aria-labelledby="crop-title">
       <button className={s.backButton} type="button" onClick={onBack}><ArrowLeft size={17} aria-hidden="true" />Voltar ao inventário</button>
       <div className={s.inspectionLayout}>
         <div className={s.inspectionInfo}>
           <header className={s.inspectionHeading}><span className={s.eyebrow}>{biofactory ? "INSPEÇÃO DE BIOFÁBRICA" : "INSPEÇÃO DA CULTURA"} · {crop.dossierPage}</span><h2 id="crop-title">{crop.name}</h2><p>{crop.description}</p>
-            <div className={s.taxonomyBlock}><span>{biofactory ? "ORGANISMOS / ESPÉCIES" : "ESPÉCIES REPRESENTADAS"}</span>{crop.species.map((item) => <div className={s.speciesRow} key={item.commonName + item.scientificName}><span>{item.commonName}</span><em>{item.scientificName}</em>{item.cultivar ? <small>{item.cultivar}</small> : null}{item.note ? <small>{item.note}</small> : null}</div>)}</div>
+            <div className={s.taxonomyBlock}><span>{biofactory ? "ORGANISMOS / ESPÉCIES" : "ESPÉCIES REPRESENTADAS"}</span>{crop.species.map((item) => <div className={s.speciesRow} key={item.commonName + item.scientificName}><span>{item.commonName}</span><em data-language-ignore>{item.scientificName}</em>{item.cultivar ? <small data-language-ignore>{item.cultivar}</small> : null}{item.note ? <small>{item.note}</small> : null}</div>)}</div>
           </header>
           <section className={s.environmentPanel} aria-labelledby="environment-title"><div className={s.panelHeading}><div><span className={s.eyebrow}>02 / SIMULAÇÃO AMBIENTAL</span><h3 id="environment-title">Ajuste o módulo</h3></div><span className={s.statusPill} data-state={score === 0 ? "ok" : "stress"}>{levelName(score)}</span></div><p className={s.environmentIntro}>Os intervalos são referências educativas. Os controles atualizam a cena imediatamente.</p>
             <div className={s.controlStack}>{factorOrder.map((factor) => <SliderControl key={factor} crop={crop} factor={factor} value={environment[factor]} onChange={(value) => onChange(factor, value)} />)}</div>
@@ -151,7 +152,7 @@ function Inspection({ crop, environment, damage, viewerState, onBack, onChange, 
         </aside>
       </div>
     </section>
-  );
+  )}</LocalizedTree>;
 }
 
 export function Greenhouse() {
@@ -167,7 +168,7 @@ export function Greenhouse() {
   const updateDamage = useCallback((update: (current: number) => number) => setDamage((current) => update(current)), []);
   const setViewer = useCallback((state: ViewerState) => setViewerState(state), []);
   const backToInventory = useCallback(() => setView("inventory"), []);
-  return <main className={s.page}><div className={s.shell}>
+  return <LocalizedTree>{<main className={s.page}><div className={s.shell}>
     <header className={s.hero}><div className={s.heroCopy}><span className={s.heroKicker}><Sprout size={15} aria-hidden="true" />MÓDULO DE SUPORTE À VIDA · MISSÃO FUTURA</span><h1>Mars <em>Greenhouse</em></h1><p>Um inventário interativo de culturas para explorar como sistemas de cultivo controlado podem apoiar a vida em uma futura missão marciana.</p><div className={s.orientation}><span className={s.orientationIcon}><Leaf size={17} aria-hidden="true" /></span><p><b>Como explorar:</b> escolha uma categoria, ajuste água, luz e temperatura e observe a representação reagir. O estado ambiental é imediato; o dano acumulado avança somente pelas etapas manuais.</p></div></div><div className={s.heroSeal} aria-label="18 categorias no inventário"><span>CATÁLOGO</span><b>18</b><small>CATEGORIAS</small><i /><small>AMBIENTE CONTROLADO</small></div></header>
     <div className={s.contextStrip}><div><ShieldCheck size={18} aria-hidden="true" /><span><b>Habitat protegido</b>Pressurização, proteção contra radiação e temperatura controlada</span></div><div><Droplets size={18} aria-hidden="true" /><span><b>Água e nutrientes</b>Água tratada e nutrição monitorada</span></div><div><Sun size={18} aria-hidden="true" /><span><b>Luz artificial</b>Espectro e fotoperíodo dependem da cultura</span></div><div><FlaskConical size={18} aria-hidden="true" /><span><b>Substrato tratado</b>Regolito bruto não é solo pronto para cultivo</span></div></div>
     {view === "inventory" ? <Inventory selectedId={selectedId} onSelect={selectCrop} /> : <Inspection crop={crop} environment={environment} damage={damage} viewerState={viewerState} onBack={backToInventory} onChange={changeEnvironment} onRestore={restore} onDamage={updateDamage} onViewerState={setViewer} />}
@@ -176,5 +177,5 @@ export function Greenhouse() {
       <div className={s.footerLinks}>{[scientificSources.veggie, scientificSources.aph, scientificSources.xroots, scientificSources.wamelink, scientificSources.pulschen, scientificSources.bvad].map((source) => <a key={source.title} href={source.url} target={source.url.startsWith("#") ? undefined : "_blank"} rel={source.url.startsWith("#") ? undefined : "noreferrer"}>{source.title}<ChevronRight size={14} aria-hidden="true" /></a>)}</div>
       <p className={s.dossierProvenance}>Dossiê técnico da equipe fornecido pelo usuário em texto nesta sessão; o PDF não foi anexado ao repositório. A documentação científica do projeto registra a proveniência e os limites de cada referência.</p>
     </section>
-  </div></main>;
+  </div></main>}</LocalizedTree>;
 }

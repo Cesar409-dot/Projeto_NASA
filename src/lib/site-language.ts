@@ -1,4 +1,4 @@
-export type SiteLanguage = "pt" | "en";
+export type SiteLanguage = "pt-BR" | "en";
 
 const entries = [
   ["Pular para o conteúdo", "Skip to content"],
@@ -189,13 +189,23 @@ const entries = [
   ["Envio diário concluído", "Daily submission complete"], ["Estado emocional", "Emotional state"], ["Estresse percebido", "Perceived stress"], ["Qualidade do sono", "Sleep quality"], ["Muito difícil", "Very difficult"], ["Muito bem", "Very well"], ["Difícil", "Difficult"], ["Neutro", "Neutral"], ["Bem", "Good"], ["muito alto", "very high"], ["muito baixo", "very low"], ["ponto(s)", "point(s)"],
 ] as const;
 
-const ptToEn = new Map<string, string>(entries);
-const fragmentEntries = [...entries]
+const supplementalEntries = [
+  ["Novo nome da exploração", "New exploration name"],
+  [" da biblioteca? Os marcadores e missões independentes serão mantidos.", " from the library? Independent markers and missions will be kept."],
+  ["Mars Survival Guide — A próxima fronteira", "Mars Survival Guide — The next frontier"],
+  ["Mars Greenhouse | Cultivo em Marte", "Mars Greenhouse | Growing on Mars"],
+  ["Biblioteca de Explorações | Mars Survival Guide", "Exploration Library | Mars Survival Guide"],
+  ["Detalhes da Exploração | Mars Survival Guide", "Exploration Details | Mars Survival Guide"],
+  ["Explore Marte, os fatores humanos e o futuro do cultivo espacial em um atlas educativo interativo.", "Explore Mars, human factors, and the future of space agriculture in an interactive educational atlas."],
+] as const;
+
+const ptToEn = new Map<string, string>([...entries, ...supplementalEntries]);
+const fragmentEntries = [...entries, ...supplementalEntries]
   .filter(([portuguese]) => portuguese.length >= 28)
   .sort(([first], [second]) => second.length - first.length);
 
 function translateNormalized(value: string, language: SiteLanguage): string {
-  if (language === "pt") return value;
+  if (language === "pt-BR") return value;
   const ratingLabel = value.match(/^([1-5]) de 5: (.+)$/);
   if (ratingLabel) return `${ratingLabel[1]} out of 5: ${translateNormalized(ratingLabel[2], language)}`;
   const trendValue = value.match(/^([+-]?\d+(?:[.,]\d+)?) ponto\(s\)$/);

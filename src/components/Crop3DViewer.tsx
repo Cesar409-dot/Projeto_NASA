@@ -1,5 +1,6 @@
 "use client";
 
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -784,7 +785,7 @@ export function Crop3DViewer({ crop, environment, damage, status, onStatus }: Pr
     renderRef.current?.();
   }
 
-  return (
+  return <LocalizedTree>{(
     <div className={s.webglViewer}>
       {status === "fallback" ? (
         <CropGlyph
@@ -809,5 +810,5 @@ export function Crop3DViewer({ crop, environment, damage, status, onStatus }: Pr
         </div>
       ) : null}
     </div>
-  );
+  )}</LocalizedTree>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight, Check, Circle, Flag, MapPin, Route as RouteIcon } from "lucide-react";
@@ -66,7 +67,7 @@ export function ExplorationReview({
     { point: route.destination, role: "Destino" },
   ];
 
-  return (
+  return <LocalizedTree>{(
     <section className={s.journey} aria-label={stage === "exploration" ? "Etapa de exploração" : "Análise da exploração"}>
       <aside className={s.journeyRail}>
         <button className={u.choice} type="button" onClick={onBackToPlanning}>
@@ -181,5 +182,5 @@ export function ExplorationReview({
         </div>
       )}
     </section>
-  );
+  )}</LocalizedTree>;
 }

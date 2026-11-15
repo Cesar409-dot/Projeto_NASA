@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useState, type FormEvent } from "react";
 import {
   distanceLabel,
@@ -46,7 +47,7 @@ function MissionEditor({
         description: draft.description.trim(),
       });
   }
-  return (
+  return <LocalizedTree>{(
     <MapDialog
       title={mission.name ? "Editar missão" : "Cadastrar missão"}
       onClose={onClose}
@@ -139,7 +140,7 @@ function MissionEditor({
         </button>
       </form>
     </MapDialog>
-  );
+  )}</LocalizedTree>;
 }
 export function MissionManager({
   missions,
@@ -167,7 +168,7 @@ export function MissionManager({
   title?: string;
 }) {
   const [editing, setEditing] = useState<MissionDraft>();
-  return (
+  return <LocalizedTree>{(
     <section className={`${s.mission} ${compact ? s.missionCompact : ""}`} aria-labelledby="missions-title">
       <div className={u.row}>
         <h2 id="missions-title">{title}</h2>
@@ -213,9 +214,9 @@ export function MissionManager({
               aria-pressed={activeId === m.id}
               onClick={() => onSelect(m)}
             >
-              {m.name}
+              <span data-language-ignore>{m.name}</span>
             </button>
-            <p>{m.objective}</p>
+            <p><span data-language-ignore>{m.objective}</span></p>
             <p>Data: {m.date.split("-").reverse().join("/")}</p>
             <p>
               Origem: {m.route.origin.name}
@@ -274,5 +275,5 @@ export function MissionManager({
         />
       )}
     </section>
-  );
+  )}</LocalizedTree>;
 }

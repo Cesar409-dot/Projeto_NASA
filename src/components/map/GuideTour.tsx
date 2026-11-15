@@ -1,4 +1,5 @@
 "use client";
+import { LocalizedTree } from "@/components/LocalizedTree";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import u from "../ui.module.css";
@@ -86,7 +87,7 @@ export function GuideTour({ onPrepareStep, onStart }: { onPrepareStep?: (step: n
     const top = below
       ? Math.max(12, Math.min(window.innerHeight - 312, spot.bottom + 14))
       : Math.max(12, spot.top - 314);
-    return createPortal(<>
+    return createPortal(<LocalizedTree>{(<>
       <div className={s.tourSpotlight} style={{ left: spot.left - 7, top: spot.top - 7, width: spot.width + 14, height: spot.height + 14 }} />
       <section className={s.tourCard} role="dialog" aria-modal="false" aria-labelledby="tour-title" style={{ left, top, width }}>
         <div className={s.tourCardHead}>
@@ -104,11 +105,11 @@ export function GuideTour({ onPrepareStep, onStart }: { onPrepareStep?: (step: n
           <button type="button" className={u.button} onClick={() => stepIndex === steps.length - 1 ? finish() : setStepIndex((i) => i + 1)}>{stepIndex === steps.length - 1 ? "Concluir" : "Avançar"}</button>
         </div>
       </section>
-    </>, document.body);
+    </>)}</LocalizedTree>, document.body);
   })() : null;
 
-  return <>
+  return <LocalizedTree>{<>
     <div className={s.guideActions}><button type="button" className={u.choice} onClick={start}>Como utilizar?</button></div>
     {overlay}
-  </>;
+  </>}</LocalizedTree>;
 }
