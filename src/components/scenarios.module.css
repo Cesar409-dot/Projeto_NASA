@@ -1,0 +1,46 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 22px;
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.options button {
+  text-align: left;
+  padding: 22px;
+}
+.options strong {
+  display: block;
+  margin-top: 10px;
+  font-weight: 500;
+  color: var(--text);
+}
+.explanation {
+  margin-top: 18px;
+}
+.strategies {
+  margin-top: 24px;
+}
+.strategies details {
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.strategies summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+}
+.strategies details p {
+  margin-top: 12px;
+}
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .options button {
+    padding: 18px;
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Brain, Radio, Moon, Wind, Play, Pause, RotateCcw } from "lucide-react";
+import { Brain, Wind, Play, Pause, RotateCcw } from "lucide-react";
+import { MissionScenarios } from "./MissionScenarios";
 import u from "./ui.module.css";
 export function MindSpace() {
   const [mood, setMood] = useState("");
@@ -120,35 +121,7 @@ export function MindSpace() {
           </div>
         </section>
       </div>
-      <div className={u.sectionTitle}>
-        <h2>O LADO HUMANO DA MISSÃO.</h2>
-        <p>Três temas para explorar.</p>
-      </div>
-      <div className={u.grid}>
-        {[
-          {
-            icon: Radio,
-            title: "Conexão com a Terra",
-            text: "Distância e isolamento transformam o contato com pessoas queridas. Comunicação e atividades significativas são temas de pesquisa para missões longas.",
-          },
-          {
-            icon: Moon,
-            title: "Rotina e descanso",
-            text: "Uma missão também é feita de ciclos de trabalho, descanso e vida em equipe. Como criar espaço para as necessidades de cada pessoa?",
-          },
-          {
-            icon: Brain,
-            title: "Sentido e pertencimento",
-            text: "Registrar experiências e cuidar de plantas são exemplos de atividades estudadas no contexto do bem-estar de tripulações.",
-          },
-        ].map((c) => (
-          <article className={u.panel} key={c.title}>
-            <c.icon color="var(--blue)" size={25} />
-            <h3>{c.title}</h3>
-            <p>{c.text}</p>
-          </article>
-        ))}
-      </div>
+      <MissionScenarios />
       <p className={u.notice}>
         Conteúdo educativo sobre fatores humanos. Este check-in não é uma
         avaliação psicológica e não fornece diagnóstico ou tratamento.
